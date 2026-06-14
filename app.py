@@ -54,17 +54,90 @@ except:
     MODEL_READY = False
     st.error("⚠️ Model tidak ditemukan. Pastikan file .pkl ada.")
 
-# ==================== PARAMETER INFO ====================
+# ==================== PARAMETER INFO YANG INFORMATIF ====================
 PARAM_INFO = {
-    "cycle": {"name": "🔄 Aging Cycle", "range": "0-2000", "normal": "<300", "warning": "300-600", "danger": ">600", "desc": "Jumlah siklus charge-discharge. Semakin tinggi, baterai semakin aus.", "example": "100"},
-    "soc": {"name": "🔋 SOC (%)", "range": "0-100", "normal": "20-80%", "warning": "<20% atau >80%", "danger": "-", "desc": "Level pengisian baterai. Ideal 20-80%.", "example": "80"},
-    "rint": {"name": "⚡ R_int (%)", "range": "0-200", "normal": "≤110%", "warning": "110-150%", "danger": ">150%", "desc": "Internal resistance. Semakin tinggi, semakin rusak.", "example": "100"},
-    "ocv": {"name": "🔌 OCV (V)", "range": "3.0-4.5", "normal": "≥3.9V", "warning": "3.7-3.9V", "danger": "<3.7V", "desc": "Tegangan diam baterai.", "example": "4.15"},
-    "freq": {"name": "📊 Frequency (Hz)", "range": "0.1-10000", "normal": "-", "warning": "-", "danger": "-", "desc": "Frekuensi pengukuran EIS.", "example": "10"},
-    "zmod": {"name": "📈 Zmod (Ohm)", "range": "0.005-0.05", "normal": "≤0.015", "warning": "0.015-0.025", "danger": ">0.025", "desc": "Modulus impedansi.", "example": "0.012"},
-    "zphz": {"name": "🔄 Zphz (deg)", "range": "-90-90", "normal": "≤-5°", "warning": "-5°-0°", "danger": ">0°", "desc": "Sudut fase impedansi.", "example": "-2.5"},
-    "zreal": {"name": "📉 Zreal (Ohm)", "range": "0.005-0.02", "normal": "≤0.013", "warning": "0.013-0.018", "danger": ">0.018", "desc": "Resistansi nyata.", "example": "0.012"},
-    "zimg": {"name": "🌀 Zimg (Ohm)", "range": "-0.01-0.01", "normal": "< -0.002", "warning": "-0.002-0", "danger": ">0", "desc": "Reaktansi imajiner.", "example": "-0.002"}
+    "cycle": {
+        "name": "🔄 Aging Cycle",
+        "range": "0 - 2000",
+        "normal": "< 300",
+        "warning": "300 - 600",
+        "danger": "> 600",
+        "desc": "**Apa itu?** Jumlah siklus charge-discharge baterai. 1 siklus = charge dari 0% ke 100%.\n\n**Kenapa penting?** Semakin tinggi cycle, semakin sering baterai dipakai, maka semakin aus.\n\n**Sumber data:** Dari BMS (Battery Management System) atau alat diagnostik bengkel.",
+        "example": "100"
+    },
+    "soc": {
+        "name": "🔋 SOC (%)",
+        "range": "0 - 100",
+        "normal": "20% - 80%",
+        "warning": "< 20% atau > 80%",
+        "danger": "-",
+        "desc": "**Apa itu?** State of Charge — level pengisian baterai saat ini (seperti indikator bensin di mobil).\n\n**Kenapa penting?** Baterai lithium-ion paling nyaman di rentang 20-80%. Terlalu kosong (<20%) atau terlalu penuh (>80%) mempercepat degradasi.\n\n**Sumber data:** Dari dashboard mobil listrik.",
+        "example": "80"
+    },
+    "rint": {
+        "name": "⚡ R_int (%)",
+        "range": "0 - 200",
+        "normal": "≤ 110%",
+        "warning": "110% - 150%",
+        "danger": "> 150%",
+        "desc": "**Apa itu?** Internal Resistance — hambatan listrik di dalam baterai.\n\n**Kenapa penting?** Baterai sehat punya hambatan rendah (≈100%). Semakin tinggi R_int, semakin rusak baterai karena material di dalamnya terdegradasi.\n\n**Sumber data:** Dari alat diagnostik / BMS.",
+        "example": "100"
+    },
+    "ocv": {
+        "name": "🔌 OCV (V)",
+        "range": "3.0 - 4.5",
+        "normal": "≥ 3.9V",
+        "warning": "3.7V - 3.9V",
+        "danger": "< 3.7V",
+        "desc": "**Apa itu?** Open Circuit Voltage — tegangan baterai saat tidak dipakai dan tidak dicharge.\n\n**Kenapa penting?** Baterai lithium-ion sehat memiliki tegangan antara 3.8V - 4.2V. Jika OCV turun di bawah 3.7V, itu tanda sel baterai mulai rusak.\n\n**Sumber data:** Dari voltmeter / BMS.",
+        "example": "4.15"
+    },
+    "freq": {
+        "name": "📊 Frequency (Hz)",
+        "range": "0.1 - 10000",
+        "normal": "-",
+        "warning": "-",
+        "danger": "-",
+        "desc": "**Apa itu?** Frekuensi pengukuran EIS (Electrochemical Impedance Spectroscopy).\n\n**Kenapa penting?** Parameter teknis pengukuran. Frekuensi rendah (0.1Hz) sensitif ke degradasi SEI layer, frekuensi tinggi (1000Hz) mengukur resistansi murni.\n\n**Sumber data:** Dari alat EIS.",
+        "example": "10",
+        "note": "Parameter pengukuran, bukan indikator kesehatan baterai"
+    },
+    "zmod": {
+        "name": "📈 Zmod (Ohm)",
+        "range": "0.005 - 0.05",
+        "normal": "≤ 0.015",
+        "warning": "0.015 - 0.025",
+        "danger": "> 0.025",
+        "desc": "**Apa itu?** Modulus impedansi — besaran impedansi total baterai.\n\n**Kenapa penting?** Semakin tua baterai, impedansi total cenderung meningkat karena degradasi material internal.\n\n**Sumber data:** Dari alat EIS.",
+        "example": "0.012"
+    },
+    "zphz": {
+        "name": "🔄 Zphz (deg)",
+        "range": "-90 - 90",
+        "normal": "≤ -5°",
+        "warning": "-5° - 0°",
+        "danger": "> 0°",
+        "desc": "**Apa itu?** Sudut fase impedansi.\n\n**Kenapa penting?** Menunjukkan sifat baterai. Baterai sehat biasanya memiliki sudut fase negatif (bersifat kapasitif). Sudut mendekati 0° atau positif menandakan degradasi.\n\n**Sumber data:** Dari alat EIS.",
+        "example": "-2.5"
+    },
+    "zreal": {
+        "name": "📉 Zreal (Ohm)",
+        "range": "0.005 - 0.02",
+        "normal": "≤ 0.013",
+        "warning": "0.013 - 0.018",
+        "danger": "> 0.018",
+        "desc": "**Apa itu?** Komponen resistif (nyata) dari impedansi.\n\n**Kenapa penting?** Berkorelasi langsung dengan R_int. Semakin tinggi Zreal, semakin besar hambatan internal baterai.\n\n**Sumber data:** Dari alat EIS.",
+        "example": "0.012"
+    },
+    "zimg": {
+        "name": "🌀 Zimg (Ohm)",
+        "range": "-0.01 - 0.01",
+        "normal": "< -0.002",
+        "warning": "-0.002 - 0",
+        "danger": "> 0",
+        "desc": "**Apa itu?** Komponen reaktif (imajiner) dari impedansi.\n\n**Kenapa penting?** Menunjukkan sifat kapasitif baterai. Nilai negatif = kapasitif (normal untuk baterai sehat). Nilai positif menandakan perubahan sifat.\n\n**Sumber data:** Dari alat EIS.",
+        "example": "-0.002"
+    }
 }
 
 # ==================== ANALISIS ====================
@@ -121,17 +194,22 @@ for msg in st.session_state.messages:
 # ==================== POPUP INFO ====================
 if st.session_state.show_info and st.session_state.show_info in PARAM_INFO:
     info = PARAM_INFO[st.session_state.show_info]
-    st.markdown(f"""
+    
+    popup_content = f"""
     <div class="info-popup">
-        <strong>ℹ️ {info['name']}</strong><br>
-        📖 {info['desc']}<br>
-        📊 <strong>Rentang:</strong> {info['range']}<br>
-        ✅ <strong>Normal:</strong> {info['normal']}<br>
-        ⚠️ <strong>Waspada:</strong> {info['warning']}<br>
-        🔴 <strong>Kritis:</strong> {info['danger']}<br>
-        💡 <strong>Contoh:</strong> {info['example']}
-    </div>
-    """, unsafe_allow_html=True)
+        <strong>ℹ️ {info['name']}</strong><br><br>
+        {info['desc']}<br><br>
+        📊 <strong>Rentang Normal:</strong> {info['range']}<br>
+        ✅ <strong>Nilai Baik:</strong> {info['normal']}<br>
+        ⚠️ <strong>Nilai Waspada:</strong> {info['warning']}<br>
+        🔴 <strong>Nilai Kritis:</strong> {info['danger']}<br>
+        💡 <strong>Contoh Input:</strong> {info['example']}
+    """
+    if info.get('note'):
+        popup_content += f"<br><br>📌 <strong>Catatan:</strong> {info['note']}"
+    popup_content += "</div>"
+    
+    st.markdown(popup_content, unsafe_allow_html=True)
     if st.button("Tutup", key="close_info", use_container_width=True):
         st.session_state.show_info = None
         st.rerun()
@@ -184,7 +262,7 @@ if st.session_state.result:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== INPUT FORM (jika belum selesai) ====================
+# ==================== INPUT FORM ====================
 if st.session_state.result is None:
     step = st.session_state.step
     info = PARAM_INFO[step]
