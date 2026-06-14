@@ -54,7 +54,7 @@ except:
     MODEL_READY = False
     st.error("⚠️ Model tidak ditemukan. Pastikan file .pkl ada.")
 
-# ==================== PARAMETER INFO YANG INFORMATIF ====================
+# ==================== PARAMETER INFO ====================
 PARAM_INFO = {
     "cycle": {
         "name": "🔄 Aging Cycle",
@@ -62,7 +62,8 @@ PARAM_INFO = {
         "normal": "< 300",
         "warning": "300 - 600",
         "danger": "> 600",
-        "desc": "**Apa itu?** Jumlah siklus charge-discharge baterai. 1 siklus = charge dari 0% ke 100%.\n\n**Kenapa penting?** Semakin tinggi cycle, semakin sering baterai dipakai, maka semakin aus.\n\n**Sumber data:** Dari BMS (Battery Management System) atau alat diagnostik bengkel.",
+        "desc": "Aging Cycle adalah jumlah siklus charge-discharge baterai. 1 siklus = charge 0% ke 100%. Semakin tinggi cycle, baterai semakin aus.",
+        "source": "Dari BMS atau alat diagnostik bengkel",
         "example": "100"
     },
     "soc": {
@@ -71,7 +72,8 @@ PARAM_INFO = {
         "normal": "20% - 80%",
         "warning": "< 20% atau > 80%",
         "danger": "-",
-        "desc": "**Apa itu?** State of Charge — level pengisian baterai saat ini (seperti indikator bensin di mobil).\n\n**Kenapa penting?** Baterai lithium-ion paling nyaman di rentang 20-80%. Terlalu kosong (<20%) atau terlalu penuh (>80%) mempercepat degradasi.\n\n**Sumber data:** Dari dashboard mobil listrik.",
+        "desc": "SOC (State of Charge) adalah level pengisian baterai saat ini. Baterai paling awet di rentang 20-80%. Terlalu rendah atau terlalu tinggi mempercepat degradasi.",
+        "source": "Dari dashboard mobil listrik",
         "example": "80"
     },
     "rint": {
@@ -80,7 +82,8 @@ PARAM_INFO = {
         "normal": "≤ 110%",
         "warning": "110% - 150%",
         "danger": "> 150%",
-        "desc": "**Apa itu?** Internal Resistance — hambatan listrik di dalam baterai.\n\n**Kenapa penting?** Baterai sehat punya hambatan rendah (≈100%). Semakin tinggi R_int, semakin rusak baterai karena material di dalamnya terdegradasi.\n\n**Sumber data:** Dari alat diagnostik / BMS.",
+        "desc": "R_int (Internal Resistance) adalah hambatan listrik di dalam baterai. Baterai sehat punya R_int sekitar 100%. Semakin tinggi R_int, semakin rusak baterai.",
+        "source": "Dari alat diagnostik / BMS",
         "example": "100"
     },
     "ocv": {
@@ -89,7 +92,8 @@ PARAM_INFO = {
         "normal": "≥ 3.9V",
         "warning": "3.7V - 3.9V",
         "danger": "< 3.7V",
-        "desc": "**Apa itu?** Open Circuit Voltage — tegangan baterai saat tidak dipakai dan tidak dicharge.\n\n**Kenapa penting?** Baterai lithium-ion sehat memiliki tegangan antara 3.8V - 4.2V. Jika OCV turun di bawah 3.7V, itu tanda sel baterai mulai rusak.\n\n**Sumber data:** Dari voltmeter / BMS.",
+        "desc": "OCV (Open Circuit Voltage) adalah tegangan baterai saat tidak dipakai. Baterai sehat memiliki OCV antara 3.8V - 4.2V. Di bawah 3.7V tandanya sel baterai rusak.",
+        "source": "Dari voltmeter / BMS",
         "example": "4.15"
     },
     "freq": {
@@ -98,9 +102,10 @@ PARAM_INFO = {
         "normal": "-",
         "warning": "-",
         "danger": "-",
-        "desc": "**Apa itu?** Frekuensi pengukuran EIS (Electrochemical Impedance Spectroscopy).\n\n**Kenapa penting?** Parameter teknis pengukuran. Frekuensi rendah (0.1Hz) sensitif ke degradasi SEI layer, frekuensi tinggi (1000Hz) mengukur resistansi murni.\n\n**Sumber data:** Dari alat EIS.",
+        "desc": "Frequency adalah frekuensi pengukuran EIS (Electrochemical Impedance Spectroscopy). Parameter teknis pengukuran, bukan indikator kesehatan baterai.",
+        "source": "Dari alat EIS",
         "example": "10",
-        "note": "Parameter pengukuran, bukan indikator kesehatan baterai"
+        "note": "Parameter teknis, bukan indikator kesehatan"
     },
     "zmod": {
         "name": "📈 Zmod (Ohm)",
@@ -108,7 +113,8 @@ PARAM_INFO = {
         "normal": "≤ 0.015",
         "warning": "0.015 - 0.025",
         "danger": "> 0.025",
-        "desc": "**Apa itu?** Modulus impedansi — besaran impedansi total baterai.\n\n**Kenapa penting?** Semakin tua baterai, impedansi total cenderung meningkat karena degradasi material internal.\n\n**Sumber data:** Dari alat EIS.",
+        "desc": "Zmod adalah modulus impedansi (besaran impedansi total baterai). Semakin tinggi Zmod, semakin besar degradasi baterai.",
+        "source": "Dari alat EIS",
         "example": "0.012"
     },
     "zphz": {
@@ -117,7 +123,8 @@ PARAM_INFO = {
         "normal": "≤ -5°",
         "warning": "-5° - 0°",
         "danger": "> 0°",
-        "desc": "**Apa itu?** Sudut fase impedansi.\n\n**Kenapa penting?** Menunjukkan sifat baterai. Baterai sehat biasanya memiliki sudut fase negatif (bersifat kapasitif). Sudut mendekati 0° atau positif menandakan degradasi.\n\n**Sumber data:** Dari alat EIS.",
+        "desc": "Zphz adalah sudut fase impedansi. Baterai sehat memiliki sudut negatif (bersifat kapasitif). Mendekati 0° atau positif menandakan degradasi.",
+        "source": "Dari alat EIS",
         "example": "-2.5"
     },
     "zreal": {
@@ -126,7 +133,8 @@ PARAM_INFO = {
         "normal": "≤ 0.013",
         "warning": "0.013 - 0.018",
         "danger": "> 0.018",
-        "desc": "**Apa itu?** Komponen resistif (nyata) dari impedansi.\n\n**Kenapa penting?** Berkorelasi langsung dengan R_int. Semakin tinggi Zreal, semakin besar hambatan internal baterai.\n\n**Sumber data:** Dari alat EIS.",
+        "desc": "Zreal adalah komponen resistif (nyata) dari impedansi. Berkorelasi langsung dengan R_int. Semakin tinggi, semakin besar hambatan internal.",
+        "source": "Dari alat EIS",
         "example": "0.012"
     },
     "zimg": {
@@ -135,7 +143,8 @@ PARAM_INFO = {
         "normal": "< -0.002",
         "warning": "-0.002 - 0",
         "danger": "> 0",
-        "desc": "**Apa itu?** Komponen reaktif (imajiner) dari impedansi.\n\n**Kenapa penting?** Menunjukkan sifat kapasitif baterai. Nilai negatif = kapasitif (normal untuk baterai sehat). Nilai positif menandakan perubahan sifat.\n\n**Sumber data:** Dari alat EIS.",
+        "desc": "Zimg adalah komponen reaktif (imajiner) dari impedansi. Nilai negatif = kapasitif (normal). Nilai positif menandakan perubahan sifat.",
+        "source": "Dari alat EIS",
         "example": "-0.002"
     }
 }
@@ -199,14 +208,15 @@ if st.session_state.show_info and st.session_state.show_info in PARAM_INFO:
     <div class="info-popup">
         <strong>ℹ️ {info['name']}</strong><br><br>
         {info['desc']}<br><br>
-        📊 <strong>Rentang Normal:</strong> {info['range']}<br>
-        ✅ <strong>Nilai Baik:</strong> {info['normal']}<br>
-        ⚠️ <strong>Nilai Waspada:</strong> {info['warning']}<br>
-        🔴 <strong>Nilai Kritis:</strong> {info['danger']}<br>
-        💡 <strong>Contoh Input:</strong> {info['example']}
+        📊 <strong>Rentang:</strong> {info['range']}<br>
+        ✅ <strong>Normal:</strong> {info['normal']}<br>
+        ⚠️ <strong>Waspada:</strong> {info['warning']}<br>
+        🔴 <strong>Kritis:</strong> {info['danger']}<br>
+        🔌 <strong>Sumber:</strong> {info['source']}<br>
+        💡 <strong>Contoh:</strong> {info['example']}
     """
     if info.get('note'):
-        popup_content += f"<br><br>📌 <strong>Catatan:</strong> {info['note']}"
+        popup_content += f"<br><br>📌 {info['note']}"
     popup_content += "</div>"
     
     st.markdown(popup_content, unsafe_allow_html=True)
@@ -273,11 +283,15 @@ if st.session_state.result is None:
         user_input = st.text_input("", key="input", placeholder=f"Ketik {info['name']}...", label_visibility="collapsed")
     with col2:
         if st.button("ℹ️", key="info_btn", use_container_width=True):
+            # Set popup, hilangkan yang lama
             st.session_state.show_info = step
     with col3:
         submitted = st.button("✅ Kirim", key="send_btn", use_container_width=True)
     
     if submitted and user_input:
+        # Hilangkan popup jika ada
+        st.session_state.show_info = None
+        
         st.session_state.messages.append({"role": "user", "content": user_input})
         
         try:
