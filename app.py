@@ -665,28 +665,33 @@ elif current_step == "zimg":
                     
                     summary_html += '</div>'
                     
-                    # Result
-                    result_html = f"""
-                    <div class="result-card">
-                        <div class="soh-value">{soh:.1f}%</div>
-                        <div class="status-badge {status_class}">{status}</div>
-                        {analysis_html}
-                        {summary_html}
-                        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #3E3E3E;">
-                            <p style="font-size: 0.7rem; color: #666; margin: 0;">📊 Berdasarkan 9 parameter yang dimasukkan</p>
-                        </div>
-                    </div>
-                    """
-                    
-                    st.session_state.messages.append({"role": "bot", "content": result_html})
-                    st.session_state.messages.append({"role": "bot", "content": "🔄 Mau cek baterai lain? Klik **Mulai Baru** di sidebar."})
-                    st.session_state.step = "done"
-                    st.rerun()
-                else:
-                    st.error("Model tidak tersedia")
-            except Exception as e:
-                st.error(f"Error: {e}")
+                    # Ganti bagian ini di dalam result_html
+analysis_html = '<div style="margin-top: 16px;"><strong>📊 Analisis Per Parameter:</strong></div>'
 
+for p in params:
+    status_p, msg_p, action_p = analyze_parameter(p, st.session_state.data[p])
+    param_status[status_p] += 1
+    
+    if status_p == "good":
+        border_color = "#10B981"
+        bg_color = "rgba(16, 185, 129, 0.1)"
+        status_text = "✅ LANJUTKAN"
+    elif status_p == "service":
+        border_color = "#F59E0B"
+        bg_color = "rgba(245, 158, 11, 0.1)"
+        status_text = "⚠️ SERVICE"
+    else:
+        border_color = "#EF4444"
+        bg_color = "rgba(239, 68, 68, 0.1)"
+        status_text = "🔴 GANTI"
+    
+    analysis_html += f"""
+    <div style="background: {bg_color}; border-left: 4px solid {border_color}; border-radius: 12px; padding: 12px; margin: 8px 0;">
+        <strong>{PARAM_INFO[p]['name']}</strong> = {st.session_state.data[p]}<br>
+        <span style="font-size: 0.85rem;">{msg_p}</span><br>
+        <span style="font-size: 0.85rem; font-weight: 600; color: {border_color};">{status_text}: {action_p.replace('✅ LANJUTKAN: ', '').replace('⚠️ SERVICE: ', '').replace('🔴 GANTI: ', '')}</span>
+    </div>
+    """
 # ==================== SIDEBAR ====================
 with st.sidebar:
     st.markdown("## 🤖 Battery Assistant")
