@@ -4,43 +4,35 @@ import joblib
 
 st.set_page_config(page_title="Battery Assistant", page_icon="🔋", layout="wide")
 
-# ==================== HIDE SIDEBAR & MAKE FULLSCREEN ====================
+# ==================== HIDE SIDEBAR ====================
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { display: none; }
     [data-testid="stSidebarNav"] { display: none; }
     .stApp { margin-left: 0; }
-    .main > div { padding-left: 1rem; padding-right: 1rem; max-width: 100%; }
     
     @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
     * { font-family: 'Inter', sans-serif; }
     .stApp { background: #0D0D0D; }
     #MainMenu, footer, header { visibility: hidden; }
     
-    .chat-container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+    .chat-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
     
-    .bot-message { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; animation: fadeIn 0.3s ease; }
+    .bot-message { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
     .bot-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #10B981, #06B6D4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
     .bot-bubble { background: #1E1E1E; border-radius: 20px 20px 20px 4px; padding: 16px 20px; color: #E0E0E0; border: 1px solid #2E2E2E; max-width: 80%; }
     
-    .user-message { display: flex; justify-content: flex-end; margin-bottom: 24px; animation: fadeIn 0.3s ease; }
+    .user-message { display: flex; justify-content: flex-end; margin-bottom: 24px; }
     .user-bubble { background: linear-gradient(135deg, #10B981, #06B6D4); border-radius: 20px 20px 4px 20px; padding: 12px 20px; color: white; max-width: 70%; font-weight: 500; }
     
-    .result-card { background: linear-gradient(135deg, #1E1E1E, #2E2E2E); border-radius: 20px; padding: 20px; text-align: center; margin: 16px 0; }
-    .soh-value { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #10B981, #06B6D4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .status-badge { display: inline-block; padding: 6px 16px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; }
-    .healthy { background: rgba(16, 185, 129, 0.2); color: #10B981; }
-    .warning { background: rgba(245, 158, 11, 0.2); color: #F59E0B; }
-    .critical { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
-    
-    .analysis-card { background: #1A1A1A; border-radius: 12px; padding: 12px; margin: 8px 0; border-left: 4px solid; text-align: left; }
-    
-    .stButton > button { background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 30px; padding: 10px 24px; color: white; font-weight: 600; width: 100%; }
+    .stButton > button { background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 30px; padding: 10px 24px; color: white; font-weight: 600; }
     .stTextInput > div > div > input { background: #1E1E1E; border: 1px solid #2E2E2E; border-radius: 30px; padding: 12px 20px; color: white; }
     
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .result-box { background: linear-gradient(135deg, #1E1E1E, #2E2E2E); border-radius: 20px; padding: 20px; text-align: center; margin: 16px 0; }
+    .result-soh { font-size: 3rem; font-weight: 800; margin: 0; }
+    .result-status { display: inline-block; padding: 6px 16px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; }
     
-    .footer { text-align: center; color: #666; font-size: 0.7rem; padding: 20px; margin-top: 100px; }
+    .footer { text-align: center; color: #666; font-size: 0.7rem; padding: 20px; margin-top: 80px; }
     hr { border-color: #2E2E2E; margin: 20px 0; }
 </style>
 """, unsafe_allow_html=True)
@@ -63,18 +55,18 @@ except:
 # ==================== PARAMETER INFO ====================
 PARAM_INFO = {
     "cycle": {"name": "🔄 Aging Cycle", "range": "0-2000", "normal": "<300", "warning": "300-600", "danger": ">600", "desc": "Jumlah siklus charge-discharge. Semakin tinggi, baterai semakin aus."},
-    "soc": {"name": "🔋 SOC (%)", "range": "0-100", "normal": "20-80%", "warning": "<20% atau >80%", "danger": "-", "desc": "Level pengisian baterai. Ideal 20-80% untuk kesehatan baterai."},
+    "soc": {"name": "🔋 SOC (%)", "range": "0-100", "normal": "20-80%", "warning": "<20% atau >80%", "danger": "-", "desc": "Level pengisian baterai. Ideal 20-80%."},
     "rint": {"name": "⚡ R_int (%)", "range": "0-200", "normal": "≤110%", "warning": "110-150%", "danger": ">150%", "desc": "Internal resistance. Semakin tinggi, semakin rusak."},
-    "ocv": {"name": "🔌 OCV (V)", "range": "3.0-4.5", "normal": "≥3.9V", "warning": "3.7-3.9V", "danger": "<3.7V", "desc": "Tegangan diam baterai. Sehat di atas 3.8V."},
-    "freq": {"name": "📊 Frequency (Hz)", "range": "0.1-10000", "normal": "-", "warning": "-", "danger": "-", "desc": "Frekuensi pengukuran EIS. Parameter teknis."},
-    "zmod": {"name": "📈 Zmod (Ohm)", "range": "0.005-0.05", "normal": "≤0.015", "warning": "0.015-0.025", "danger": ">0.025", "desc": "Modulus impedansi. Meningkat seiring degradasi."},
-    "zphz": {"name": "🔄 Zphz (deg)", "range": "-90-90", "normal": "≤-5°", "warning": "-5°-0°", "danger": ">0°", "desc": "Sudut fase impedansi. Negatif = normal."},
-    "zreal": {"name": "📉 Zreal (Ohm)", "range": "0.005-0.02", "normal": "≤0.013", "warning": "0.013-0.018", "danger": ">0.018", "desc": "Resistansi nyata. Berkorelasi dengan R_int."},
-    "zimg": {"name": "🌀 Zimg (Ohm)", "range": "-0.01-0.01", "normal": "< -0.002", "warning": "-0.002-0", "danger": ">0", "desc": "Reaktansi imajiner. Negatif = normal."}
+    "ocv": {"name": "🔌 OCV (V)", "range": "3.0-4.5", "normal": "≥3.9V", "warning": "3.7-3.9V", "danger": "<3.7V", "desc": "Tegangan diam baterai."},
+    "freq": {"name": "📊 Frequency (Hz)", "range": "0.1-10000", "normal": "-", "warning": "-", "danger": "-", "desc": "Frekuensi pengukuran EIS."},
+    "zmod": {"name": "📈 Zmod (Ohm)", "range": "0.005-0.05", "normal": "≤0.015", "warning": "0.015-0.025", "danger": ">0.025", "desc": "Modulus impedansi."},
+    "zphz": {"name": "🔄 Zphz (deg)", "range": "-90-90", "normal": "≤-5°", "warning": "-5°-0°", "danger": ">0°", "desc": "Sudut fase impedansi."},
+    "zreal": {"name": "📉 Zreal (Ohm)", "range": "0.005-0.02", "normal": "≤0.013", "warning": "0.013-0.018", "danger": ">0.018", "desc": "Resistansi nyata."},
+    "zimg": {"name": "🌀 Zimg (Ohm)", "range": "-0.01-0.01", "normal": "< -0.002", "warning": "-0.002-0", "danger": ">0", "desc": "Reaktansi imajiner."}
 }
 
-# ==================== ANALISIS FUNCTION ====================
-def analyze_param(key, val):
+# ==================== ANALISIS ====================
+def analyze(key, val):
     if key == "cycle":
         if val < 300: return "good", f"{val} (Masih baru)", "Lanjutkan normal"
         elif val < 600: return "warning", f"{val} (Mulai menua)", "Pantau berkala"
@@ -109,219 +101,194 @@ if "step" not in st.session_state:
     st.session_state.step = "cycle"
     st.session_state.data = {}
     st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000):"}]
+    st.session_state.show_info = None
+    st.session_state.result = None
 
 # ==================== HEADER ====================
 st.markdown('<div style="text-align: center; padding: 20px 0 10px 0;"><span style="font-size: 2.5rem;">🔋</span><h1 style="color: white; margin: 0;">Battery Assistant</h1><p style="color: #888;">AI-based SOH Prediction | ANN Model</p></div>', unsafe_allow_html=True)
 
 # ==================== CHAT DISPLAY ====================
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
 for msg in st.session_state.messages:
     if msg["role"] == "bot":
-        if "result-card" in msg["content"]:
-            st.markdown(f'<div class="bot-message"><div class="bot-avatar">🤖</div><div class="bot-bubble" style="max-width: 90%;">{msg["content"]}</div></div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="bot-message"><div class="bot-avatar">🤖</div><div class="bot-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="bot-message"><div class="bot-avatar">🤖</div><div class="bot-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div class="user-message"><div class="user-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== INPUT FORM ====================
-step = st.session_state.step
-
-# Input dengan tombol info
-col1, col2, col3 = st.columns([4, 1, 1])
-with col1:
-    user_input = st.text_input("", key="input", placeholder="Ketik jawabanmu...", label_visibility="collapsed")
-with col2:
-    if st.button("ℹ️", key="info", use_container_width=True):
-        info_key = step.replace("_input", "")
-        st.session_state.show_info = info_key
-with col3:
-    submitted = st.button("✅ Kirim", key="send", use_container_width=True)
-
-# Popup info
-if hasattr(st.session_state, 'show_info') and st.session_state.show_info:
-    info = PARAM_INFO[st.session_state.show_info]
-    st.info(f"""
-    **{info['name']}**
-    📖 {info['desc']}
-    📊 **Rentang:** {info['range']}
-    ✅ **Normal:** {info['normal']}
-    ⚠️ **Waspada:** {info['warning']}
-    🔴 **Kritis:** {info['danger']}
-    """)
-    if st.button("Tutup", key="close_info"):
-        st.session_state.show_info = None
-        st.rerun()
-
-# Proses input
-if submitted and user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
+# ==================== HASIL PREDIKSI ====================
+if st.session_state.result:
+    soh, status, good, service, replace, analysis = st.session_state.result
     
-    try:
-        val = float(user_input)
-        
-        if step == "cycle":
-            if 0 <= val <= 2000:
-                st.session_state.data["cycle"] = val
-                st.session_state.step = "soc"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ Aging cycle: {val:.0f}\n\nMasukkan **SOC (%)** (0-100):"})
-            else:
-                st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-2000"})
-        
-        elif step == "soc":
-            if 0 <= val <= 100:
-                st.session_state.data["soc"] = val
-                st.session_state.step = "rint"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ SOC: {val:.0f}%\n\nMasukkan **R_int (%)** (0-200):"})
-            else:
-                st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-100"})
-        
-        elif step == "rint":
-            if 0 <= val <= 200:
-                st.session_state.data["rint"] = val
-                st.session_state.step = "ocv"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ R_int: {val:.0f}%\n\nMasukkan **OCV (V)** (3.0-4.5):"})
-            else:
-                st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-200"})
-        
-        elif step == "ocv":
-            if 3.0 <= val <= 4.5:
-                st.session_state.data["ocv"] = val
-                st.session_state.step = "freq"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ OCV: {val:.2f}V\n\nMasukkan **Frequency (Hz)** (0.1-10000):"})
-            else:
-                st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 3.0-4.5"})
-        
-        elif step == "freq":
-            if 0.1 <= val <= 10000:
-                st.session_state.data["freq"] = val
-                st.session_state.step = "zmod"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ Frequency: {val:.2f} Hz\n\nMasukkan **Zmod (Ohm)** (0.005-0.05):"})
-            else:
-                st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0.1-10000"})
-        
-        elif step == "zmod":
-            st.session_state.data["zmod"] = val
-            st.session_state.step = "zphz"
-            st.session_state.messages.append({"role": "bot", "content": f"✅ Zmod: {val:.6f} Ohm\n\nMasukkan **Zphz (deg)** (-90-90):"})
-        
-        elif step == "zphz":
-            st.session_state.data["zphz"] = val
-            st.session_state.step = "zreal"
-            st.session_state.messages.append({"role": "bot", "content": f"✅ Zphz: {val:.2f}°\n\nMasukkan **Zreal (Ohm)** (0.005-0.02):"})
-        
-        elif step == "zreal":
-            st.session_state.data["zreal"] = val
-            st.session_state.step = "zimg"
-            st.session_state.messages.append({"role": "bot", "content": f"✅ Zreal: {val:.6f} Ohm\n\nMasukkan **Zimg (Ohm)** (-0.01-0.01):"})
-        
-        elif step == "zimg":
-            st.session_state.data["zimg"] = val
-            
-            if MODEL_READY:
-                # PREDIKSI
-                input_data = np.array([[
-                    st.session_state.data["cycle"],
-                    st.session_state.data["soc"],
-                    st.session_state.data["rint"],
-                    st.session_state.data["ocv"],
-                    st.session_state.data["freq"],
-                    st.session_state.data["zmod"],
-                    st.session_state.data["zphz"],
-                    st.session_state.data["zreal"],
-                    st.session_state.data["zimg"]
-                ]])
-                input_scaled = scaler_X.transform(input_data)
-                soh = scaler_y.inverse_transform(model.predict(input_scaled).reshape(-1, 1))[0][0]
-                
-                # Status SOH
-                if soh >= 90:
-                    status = "SEHAT"
-                    status_class = "healthy"
-                elif soh >= 70:
-                    status = "WASPADA"
-                    status_class = "warning"
-                else:
-                    status = "KRITIS"
-                    status_class = "critical"
-                
-                # Analisis per parameter
-                params = ["cycle", "soc", "rint", "ocv", "zmod", "zphz", "zreal", "zimg"]
-                good = service = replace = 0
-                analysis_html = ""
-                
-                for p in params:
-                    stat, msg, action = analyze_param(p, st.session_state.data[p])
-                    if stat == "good":
-                        good += 1
-                        color = "#10B981"
-                        label = "✅ LANJUTKAN"
-                    elif stat == "warning":
-                        service += 1
-                        color = "#F59E0B"
-                        label = "⚠️ SERVICE"
-                    else:
-                        replace += 1
-                        color = "#EF4444"
-                        label = "🔴 GANTI"
-                    
-                    analysis_html += f"""
-                    <div class="analysis-card" style="border-left-color: {color};">
-                        <strong>{PARAM_INFO[p]['name']}</strong> = {st.session_state.data[p]}<br>
-                        <span>{msg}</span><br>
-                        <span style="color: {color}; font-weight: 600;">{label}: {action}</span>
-                    </div>
-                    """
-                
-                # Ringkasan
-                summary_html = f"""
-                <div style="margin-top: 20px; padding: 16px; background: #0D0D0D; border-radius: 16px;">
-                    <strong>📋 RINGKASAN:</strong><br>
-                    ✅ LANJUTKAN: {good} parameter<br>
-                    ⚠️ SERVICE: {service} parameter<br>
-                    🔴 GANTI: {replace} parameter<br>
-                """
-                
-                if replace > 0:
-                    summary_html += f'<br><span style="color: #EF4444;">🔴 KESIMPULAN: Ada {replace} parameter yang harus GANTI. Segera lakukan tindakan!</span>'
-                elif service > 0:
-                    summary_html += f'<br><span style="color: #F59E0B;">⚠️ KESIMPULAN: Ada {service} parameter yang perlu SERVICE. Lakukan inspeksi segera.</span>'
-                else:
-                    summary_html += f'<br><span style="color: #10B981;">✅ KESIMPULAN: Semua parameter dalam kondisi baik. Lanjutkan pemakaian normal.</span>'
-                
-                summary_html += "</div>"
-                
-                result_html = f"""
-                <div class="result-card">
-                    <div class="soh-value">{soh:.1f}%</div>
-                    <div class="status-badge {status_class}">{status}</div>
-                    <div style="margin-top: 16px;"><strong>📊 Analisis Per Parameter:</strong></div>
-                    {analysis_html}
-                    {summary_html}
-                    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #3E3E3E;">
-                        <p style="font-size: 0.7rem; color: #666;">📊 Berdasarkan 9 parameter yang dimasukkan</p>
-                    </div>
-                </div>
-                """
-                
-                st.session_state.messages.append({"role": "bot", "content": result_html})
-                st.session_state.messages.append({"role": "bot", "content": "🔄 Mau cek baterai lain? Klik **Mulai Baru** di bawah."})
-                st.session_state.step = "done"
-            else:
-                st.session_state.messages.append({"role": "bot", "content": "⚠️ Model tidak tersedia"})
+    color = "green" if status == "SEHAT" else ("orange" if status == "WASPADA" else "red")
     
-    except ValueError:
-        st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka yang valid"})
+    st.markdown(f"""
+    <div class="result-box">
+        <div class="result-soh" style="color: {color};">{soh:.1f}%</div>
+        <div class="result-status" style="background: rgba({('16,185,129' if status=="SEHAT" else ('245,158,11' if status=="WASPADA" else '239,68,68'))}, 0.2); color: {color};">{status}</div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.rerun()
-
-# ==================== MULAI BARU ====================
-if st.session_state.step == "done":
+    st.markdown("**📊 Analisis Per Parameter:**")
+    for name, msg, action, stat in analysis:
+        if stat == "good":
+            st.success(f"✅ **{name}** : {msg} → {action}")
+        elif stat == "warning":
+            st.warning(f"⚠️ **{name}** : {msg} → {action}")
+        else:
+            st.error(f"🔴 **{name}** : {msg} → {action}")
+    
+    st.markdown("---")
+    st.markdown("**📋 RINGKASAN:**")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.metric("✅ LANJUTKAN", f"{good} parameter")
+    with c2: st.metric("⚠️ SERVICE", f"{service} parameter")
+    with c3: st.metric("🔴 GANTI", f"{replace} parameter")
+    
+    if replace > 0:
+        st.error(f"🔴 **KESIMPULAN:** Ada {replace} parameter yang harus GANTI. Segera lakukan tindakan!")
+    elif service > 0:
+        st.warning(f"⚠️ **KESIMPULAN:** Ada {service} parameter yang perlu SERVICE. Lakukan inspeksi segera.")
+    else:
+        st.success(f"✅ **KESIMPULAN:** Semua parameter dalam kondisi baik. Lanjutkan pemakaian normal.")
+    
+    st.caption("📊 Berdasarkan 9 parameter yang dimasukkan")
+    
     if st.button("🔄 Mulai Baru", use_container_width=True):
         st.session_state.step = "cycle"
         st.session_state.data = {}
         st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000):"}]
+        st.session_state.result = None
+        st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================== INPUT FORM (jika belum selesai) ====================
+if st.session_state.result is None:
+    step = st.session_state.step
+    
+    col1, col2, col3 = st.columns([4, 1, 1])
+    with col1:
+        user_input = st.text_input("", key="input", placeholder="Ketik jawabanmu...", label_visibility="collapsed")
+    with col2:
+        if st.button("ℹ️", key="info_btn", use_container_width=True):
+            st.session_state.show_info = step
+    with col3:
+        submitted = st.button("✅ Kirim", key="send_btn", use_container_width=True)
+    
+    # Popup info
+    if st.session_state.show_info and st.session_state.show_info in PARAM_INFO:
+        info = PARAM_INFO[st.session_state.show_info]
+        st.info(f"""
+        **{info['name']}**
+        📖 {info['desc']}
+        📊 **Rentang:** {info['range']}
+        ✅ **Normal:** {info['normal']}
+        ⚠️ **Waspada:** {info['warning']}
+        🔴 **Kritis:** {info['danger']}
+        """)
+        if st.button("Tutup", key="close_info"):
+            st.session_state.show_info = None
+            st.rerun()
+    
+    if submitted and user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        
+        try:
+            val = float(user_input)
+            
+            if step == "cycle":
+                if 0 <= val <= 2000:
+                    st.session_state.data["cycle"] = val
+                    st.session_state.step = "soc"
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ Aging cycle: {val:.0f}\n\nMasukkan **SOC (%)** (0-100):"})
+                else:
+                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-2000"})
+            
+            elif step == "soc":
+                if 0 <= val <= 100:
+                    st.session_state.data["soc"] = val
+                    st.session_state.step = "rint"
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ SOC: {val:.0f}%\n\nMasukkan **R_int (%)** (0-200):"})
+                else:
+                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-100"})
+            
+            elif step == "rint":
+                if 0 <= val <= 200:
+                    st.session_state.data["rint"] = val
+                    st.session_state.step = "ocv"
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ R_int: {val:.0f}%\n\nMasukkan **OCV (V)** (3.0-4.5):"})
+                else:
+                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-200"})
+            
+            elif step == "ocv":
+                if 3.0 <= val <= 4.5:
+                    st.session_state.data["ocv"] = val
+                    st.session_state.step = "freq"
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ OCV: {val:.2f}V\n\nMasukkan **Frequency (Hz)** (0.1-10000):"})
+                else:
+                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 3.0-4.5"})
+            
+            elif step == "freq":
+                if 0.1 <= val <= 10000:
+                    st.session_state.data["freq"] = val
+                    st.session_state.step = "zmod"
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ Frequency: {val:.2f} Hz\n\nMasukkan **Zmod (Ohm)** (0.005-0.05):"})
+                else:
+                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0.1-10000"})
+            
+            elif step == "zmod":
+                st.session_state.data["zmod"] = val
+                st.session_state.step = "zphz"
+                st.session_state.messages.append({"role": "bot", "content": f"✅ Zmod: {val:.6f} Ohm\n\nMasukkan **Zphz (deg)** (-90-90):"})
+            
+            elif step == "zphz":
+                st.session_state.data["zphz"] = val
+                st.session_state.step = "zreal"
+                st.session_state.messages.append({"role": "bot", "content": f"✅ Zphz: {val:.2f}°\n\nMasukkan **Zreal (Ohm)** (0.005-0.02):"})
+            
+            elif step == "zreal":
+                st.session_state.data["zreal"] = val
+                st.session_state.step = "zimg"
+                st.session_state.messages.append({"role": "bot", "content": f"✅ Zreal: {val:.6f} Ohm\n\nMasukkan **Zimg (Ohm)** (-0.01-0.01):"})
+            
+            elif step == "zimg":
+                st.session_state.data["zimg"] = val
+                
+                if MODEL_READY:
+                    input_data = np.array([[
+                        st.session_state.data["cycle"], st.session_state.data["soc"],
+                        st.session_state.data["rint"], st.session_state.data["ocv"],
+                        st.session_state.data["freq"], st.session_state.data["zmod"],
+                        st.session_state.data["zphz"], st.session_state.data["zreal"],
+                        st.session_state.data["zimg"]
+                    ]])
+                    input_scaled = scaler_X.transform(input_data)
+                    soh = scaler_y.inverse_transform(model.predict(input_scaled).reshape(-1, 1))[0][0]
+                    
+                    if soh >= 90: status = "SEHAT"
+                    elif soh >= 70: status = "WASPADA"
+                    else: status = "KRITIS"
+                    
+                    params = ["cycle", "soc", "rint", "ocv", "zmod", "zphz", "zreal", "zimg"]
+                    good = service = replace = 0
+                    analysis = []
+                    
+                    for p in params:
+                        stat, msg, action = analyze(p, st.session_state.data[p])
+                        if stat == "good": good += 1
+                        elif stat == "warning": service += 1
+                        else: replace += 1
+                        analysis.append((PARAM_INFO[p]['name'], msg, action, stat))
+                    
+                    st.session_state.result = (soh, status, good, service, replace, analysis)
+                    st.session_state.messages.append({"role": "bot", "content": "✅ Semua data sudah dimasukkan! Lihat hasil analisis di bawah."})
+                else:
+                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Model tidak tersedia"})
+        
+        except ValueError:
+            st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka yang valid"})
+        
         st.rerun()
 
 # ==================== FOOTER ====================
