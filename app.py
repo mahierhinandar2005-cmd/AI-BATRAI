@@ -123,13 +123,6 @@ st.markdown("""
         border: 1px solid #10B981 !important;
         border-radius: 16px !important;
     }
-    
-    /* Analysis card styling */
-    .analysis-card {
-        border-radius: 12px;
-        padding: 12px;
-        margin: 8px 0;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -153,84 +146,84 @@ PARAM_INFO = {
     "cycle": {
         "name": "🔄 Aging Cycle",
         "desc": "Jumlah siklus charge-discharge yang sudah dilalui baterai.",
-        "detail": "1 siklus = charge dari 0% ke 100% (atau akumulasi). Semakin tinggi cycle, baterai semakin aus.",
+        "detail": "1 siklus = charge dari 0% ke 100%. Semakin tinggi, baterai semakin aus.",
         "range": "0 - 2000",
         "good": "Rendah (<300)",
         "bad": "Tinggi (>600)",
-        "source": "Dari BMS atau alat diagnostik"
+        "source": "Dari BMS / alat diagnostik"
     },
     "soc": {
         "name": "🔋 SOC (%)",
-        "desc": "State of Charge — level pengisian baterai saat ini.",
-        "detail": "SOC ideal untuk kesehatan baterai adalah 20-80%.",
+        "desc": "Level pengisian baterai saat ini.",
+        "detail": "SOC ideal 20-80%. Terlalu rendah/tinggi mempercepat degradasi.",
         "range": "0 - 100",
         "good": "20-80%",
         "bad": "<20% atau >80%",
-        "source": "Dari dashboard mobil listrik"
+        "source": "Dari dashboard mobil"
     },
     "rint": {
         "name": "⚡ R_int (%)",
         "desc": "Internal Resistance — hambatan listrik di dalam baterai.",
-        "detail": "Baterai sehat punya R_int sekitar 100%. Semakin tinggi R_int, semakin rusak baterai.",
+        "detail": "Baterai sehat punya R_int sekitar 100%. Semakin tinggi, semakin rusak.",
         "range": "0 - 200",
         "good": "≤110%",
         "bad": ">150%",
-        "source": "Dari alat diagnostik / BMS"
+        "source": "Alat diagnostik / BMS"
     },
     "ocv": {
         "name": "🔌 OCV (V)",
-        "desc": "Open Circuit Voltage — tegangan baterai saat tidak dipakai.",
-        "detail": "Baterai lithium-ion sehat memiliki OCV antara 3.8V - 4.2V.",
+        "desc": "Tegangan baterai saat tidak dipakai.",
+        "detail": "Baterai sehat memiliki OCV antara 3.8V - 4.2V.",
         "range": "3.0 - 4.5",
         "good": "≥3.9V",
         "bad": "<3.7V",
-        "source": "Dari voltmeter / BMS"
+        "source": "Voltmeter / BMS"
     },
     "freq": {
         "name": "📊 Frequency (Hz)",
         "desc": "Frekuensi pengukuran EIS.",
-        "detail": "Parameter teknis pengukuran. Frekuensi rendah (0.1Hz) sensitif ke degradasi.",
+        "detail": "Parameter teknis pengukuran.",
         "range": "0.1 - 10000",
         "good": None,
         "bad": None,
-        "source": "Dari alat EIS",
+        "source": "Alat EIS",
         "note": "Parameter pengukuran, bukan indikator kesehatan baterai"
     },
     "zmod": {
         "name": "📈 Zmod (Ohm)",
-        "desc": "Modulus impedansi — besaran impedansi total baterai.",
-        "detail": "Nilai impedansi total baterai. Meningkat seiring degradasi.",
+        "desc": "Modulus impedansi total baterai.",
+        "detail": "Meningkat seiring degradasi baterai.",
         "range": "0.005 - 0.05",
-        "good": "Rendah (≤0.015)",
-        "bad": "Tinggi (>0.025)",
-        "source": "Dari alat EIS"
+        "good": "≤0.015",
+        "bad": ">0.025",
+        "source": "Alat EIS"
     },
     "zphz": {
         "name": "🔄 Zphz (deg)",
         "desc": "Sudut fase impedansi.",
-        "detail": "Baterai sehat biasanya memiliki sudut fase negatif (kapasitif).",
+        "detail": "Baterai sehat memiliki sudut fase negatif (kapasitif).",
         "range": "-90 - 90",
         "good": "≤-5°",
         "bad": ">0°",
-        "source": "Dari alat EIS"
+        "source": "Alat EIS"
     },
     "zreal": {
         "name": "📉 Zreal (Ohm)",
-        "desc": "Komponen resistif (nyata) dari impedansi.",
-        "detail": "Berkorelasi langsung dengan R_int. Semakin tinggi, semakin besar hambatan internal.",
+        "desc": "Komponen resistif dari impedansi.",
+        "detail": "Berkorelasi langsung dengan R_int.",
         "range": "0.005 - 0.02",
         "good": "≤0.013",
         "bad": ">0.018",
-        "source": "Dari alat EIS"
+        "source": "Alat EIS"
     },
     "zimg": {
         "name": "🌀 Zimg (Ohm)",
-        "desc": "Komponen reaktif (imajiner) dari impedansi.",
+        "desc": "Komponen reaktif dari impedansi.",
         "detail": "Nilai negatif = kapasitif (normal).",
         "range": "-0.01 - 0.01",
         "good": "< -0.002",
         "bad": ">0",
-        "source": "Dari alat EIS"
+        "source": "Alat EIS"
     }
 }
 
@@ -238,12 +231,11 @@ PARAM_INFO = {
 def analyze_parameter(param_key, value):
     if param_key == "cycle":
         if value < 300:
-            return "good", f"{value} (Masih rendah, baterai baru)", "Normal use"
+            return "good", f"{value} (Masih rendah, baterai baru)", "Lanjutkan normal"
         elif value < 600:
             return "service", f"{value} (Mulai memasuki fase menua)", "Pantau performa berkala"
         else:
             return "replace", f"{value} (Sudah tinggi, mendekati akhir masa pakai)", "Inspeksi segera"
-    
     elif param_key == "soc":
         if 20 <= value <= 80:
             return "good", f"{value}% (Dalam rentang optimal)", "Kebiasaan pengisian baik"
@@ -251,7 +243,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value}% (Terlalu rendah)", "Segera charge"
         else:
             return "service", f"{value}% (Terlalu tinggi)", "Kurangi charge penuh"
-    
     elif param_key == "rint":
         if value <= 110:
             return "good", f"{value}% (Normal, hambatan internal baik)", "Pertahankan kondisi"
@@ -259,7 +250,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value}% (Mulai meningkat, indikasi degradasi)", "Lakukan balancing cell"
         else:
             return "replace", f"{value}% (Sangat tinggi, baterai rusak)", "Segera ganti baterai"
-    
     elif param_key == "ocv":
         if value >= 3.9:
             return "good", f"{value}V (Normal, tegangan sehat)", "Tidak perlu tindakan"
@@ -267,7 +257,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value}V (Mulai menurun)", "Periksa sistem pengisian"
         else:
             return "replace", f"{value}V (Sangat rendah, sel bermasalah)", "Segera ganti baterai"
-    
     elif param_key == "zmod":
         if value <= 0.015:
             return "good", f"{value} Ohm (Rendah, impedansi normal)", "Lanjutkan normal"
@@ -275,7 +264,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value} Ohm (Mulai meningkat)", "Monitor berkala"
         else:
             return "replace", f"{value} Ohm (Tinggi, impedansi membesar)", "Indikasi kerusakan"
-    
     elif param_key == "zphz":
         if value <= -5:
             return "good", f"{value}° (Negatif, normal)", "Lanjutkan normal"
@@ -283,7 +271,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value}° (Mendekati 0°, mulai berubah)", "Periksa kondisi"
         else:
             return "replace", f"{value}° (Positif, sifat berubah)", "Indikasi kerusakan"
-    
     elif param_key == "zreal":
         if value <= 0.013:
             return "good", f"{value} Ohm (Rendah, resistansi normal)", "Lanjutkan normal"
@@ -291,7 +278,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value} Ohm (Meningkat, perlu diwaspadai)", "Monitor berkala"
         else:
             return "replace", f"{value} Ohm (Tinggi, hambatan besar)", "Segera ganti"
-    
     elif param_key == "zimg":
         if value < -0.002:
             return "good", f"{value} Ohm (Negatif, normal)", "Lanjutkan normal"
@@ -299,7 +285,6 @@ def analyze_parameter(param_key, value):
             return "service", f"{value} Ohm (Mendekati 0, mulai berubah)", "Periksa kondisi"
         else:
             return "replace", f"{value} Ohm (Positif, sifat berubah)", "Indikasi kerusakan"
-    
     else:
         return "good", str(value), "Normal"
 
@@ -323,22 +308,12 @@ st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
 for msg in st.session_state.messages:
     if msg["role"] == "bot":
-        if msg["content"].startswith("<div"):
-            st.markdown(f"""
-            <div class="bot-message-wrapper">
-                <div class="bot-avatar">🤖</div>
-                <div class="bot-content">
-                    <div class="bot-bubble" style="max-width: 100%;">{msg["content"]}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="bot-message-wrapper">
-                <div class="bot-avatar">🤖</div>
-                <div class="bot-bubble">{msg["content"]}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="bot-message-wrapper">
+            <div class="bot-avatar">🤖</div>
+            <div class="bot-bubble">{msg["content"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
         <div class="user-message">
@@ -349,13 +324,13 @@ for msg in st.session_state.messages:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== FUNGSI INPUT ====================
-def show_input_with_info(param_key, label, placeholder, input_key):
+def show_input_with_info(param_key, placeholder, input_key):
     param_info = PARAM_INFO[param_key]
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_val = st.text_input(label, placeholder=placeholder, key=input_key, label_visibility="collapsed")
+        user_val = st.text_input("", placeholder=placeholder, key=input_key, label_visibility="collapsed")
     with col2:
-        with st.popover("ℹ️ Info", use_container_width=True):
+        with st.popover("ℹ️", use_container_width=True):
             st.markdown(f"**{param_info['name']}**")
             st.markdown(f"📖 {param_info['detail']}")
             st.markdown(f"📊 **Rentang:** {param_info['range']}")
@@ -380,7 +355,7 @@ if current_step == "cycle":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("cycle", "", "Contoh: 100", "cycle_input")
+    user_val = show_input_with_info("cycle", "Contoh: 100", "cycle_input")
     if st.button("✅ Kirim", key="send_cycle", use_container_width=True):
         if user_val:
             try:
@@ -405,7 +380,7 @@ elif current_step == "soc":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("soc", "", "Contoh: 80", "soc_input")
+    user_val = show_input_with_info("soc", "Contoh: 80", "soc_input")
     if st.button("✅ Kirim", key="send_soc", use_container_width=True):
         if user_val:
             try:
@@ -430,7 +405,7 @@ elif current_step == "rint":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("rint", "", "Contoh: 100", "rint_input")
+    user_val = show_input_with_info("rint", "Contoh: 100", "rint_input")
     if st.button("✅ Kirim", key="send_rint", use_container_width=True):
         if user_val:
             try:
@@ -455,7 +430,7 @@ elif current_step == "ocv":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("ocv", "", "Contoh: 4.15", "ocv_input")
+    user_val = show_input_with_info("ocv", "Contoh: 4.15", "ocv_input")
     if st.button("✅ Kirim", key="send_ocv", use_container_width=True):
         if user_val:
             try:
@@ -480,7 +455,7 @@ elif current_step == "freq":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("freq", "", "Contoh: 10", "freq_input")
+    user_val = show_input_with_info("freq", "Contoh: 10", "freq_input")
     if st.button("✅ Kirim", key="send_freq", use_container_width=True):
         if user_val:
             try:
@@ -505,7 +480,7 @@ elif current_step == "zmod":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("zmod", "", "Contoh: 0.012", "zmod_input")
+    user_val = show_input_with_info("zmod", "Contoh: 0.012", "zmod_input")
     if st.button("✅ Kirim", key="send_zmod", use_container_width=True):
         if user_val:
             try:
@@ -527,7 +502,7 @@ elif current_step == "zphz":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("zphz", "", "Contoh: -2.5", "zphz_input")
+    user_val = show_input_with_info("zphz", "Contoh: -2.5", "zphz_input")
     if st.button("✅ Kirim", key="send_zphz", use_container_width=True):
         if user_val:
             try:
@@ -549,7 +524,7 @@ elif current_step == "zreal":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("zreal", "", "Contoh: 0.012", "zreal_input")
+    user_val = show_input_with_info("zreal", "Contoh: 0.012", "zreal_input")
     if st.button("✅ Kirim", key="send_zreal", use_container_width=True):
         if user_val:
             try:
@@ -571,7 +546,7 @@ elif current_step == "zimg":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    user_val = show_input_with_info("zimg", "", "Contoh: -0.002", "zimg_input")
+    user_val = show_input_with_info("zimg", "Contoh: -0.002", "zimg_input")
     if st.button("✅ Kirim", key="send_zimg", use_container_width=True):
         if user_val:
             try:
@@ -610,67 +585,64 @@ elif current_step == "zimg":
                     params = ["cycle", "soc", "rint", "ocv", "zmod", "zphz", "zreal", "zimg"]
                     param_status = {"good": 0, "service": 0, "replace": 0}
                     
-                    # Mulai buat HTML hasil dengan styling yang lebih baik
-                    result_html = f"""
+                    # TAMPILKAN HASIL LANGSUNG (TIDAK DISIMPAN KE SESSION STATE)
+                    st.markdown("---")
+                    st.markdown(f"""
                     <div style="background: linear-gradient(135deg, #1E1E1E, #2E2E2E); border-radius: 20px; padding: 20px; text-align: center; margin: 16px 0;">
                         <div style="font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #10B981, #06B6D4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{soh:.1f}%</div>
                         <div style="display: inline-block; padding: 6px 16px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; background: rgba(16, 185, 129, 0.2); color: #10B981;">{status}</div>
                         <div style="margin-top: 16px;"><strong>📊 Analisis Per Parameter:</strong></div>
-                    """
+                    """, unsafe_allow_html=True)
                     
                     for p in params:
                         status_p, msg_p, action_p = analyze_parameter(p, st.session_state.data[p])
                         param_status[status_p] += 1
                         
                         if status_p == "good":
-                            bg_color = "rgba(16, 185, 129, 0.1)"
-                            border_color = "#10B981"
-                            status_text = "✅ LANJUTKAN"
+                            bg = "rgba(16, 185, 129, 0.1)"
+                            border = "#10B981"
+                            label = "✅ LANJUTKAN"
                         elif status_p == "service":
-                            bg_color = "rgba(245, 158, 11, 0.1)"
-                            border_color = "#F59E0B"
-                            status_text = "⚠️ SERVICE"
+                            bg = "rgba(245, 158, 11, 0.1)"
+                            border = "#F59E0B"
+                            label = "⚠️ SERVICE"
                         else:
-                            bg_color = "rgba(239, 68, 68, 0.1)"
-                            border_color = "#EF4444"
-                            status_text = "🔴 GANTI"
+                            bg = "rgba(239, 68, 68, 0.1)"
+                            border = "#EF4444"
+                            label = "🔴 GANTI"
                         
-                        result_html += f"""
-                        <div style="background: {bg_color}; border-left: 4px solid {border_color}; border-radius: 12px; padding: 12px; margin: 8px 0; text-align: left;">
+                        st.markdown(f"""
+                        <div style="background: {bg}; border-left: 4px solid {border}; border-radius: 12px; padding: 12px; margin: 8px 0; text-align: left;">
                             <strong>{PARAM_INFO[p]['name']}</strong> = {st.session_state.data[p]}<br>
                             <span style="font-size: 0.85rem;">{msg_p}</span><br>
-                            <span style="font-size: 0.85rem; font-weight: 600; color: {border_color};">{status_text}: {action_p}</span>
+                            <span style="font-size: 0.85rem; font-weight: 600; color: {border};">{label}: {action_p}</span>
                         </div>
-                        """
+                        """, unsafe_allow_html=True)
                     
-                    # Ringkasan
-                    result_html += f"""
+                    st.markdown(f"""
                         <div style="margin-top: 20px; padding: 16px; background: #0D0D0D; border-radius: 16px; border: 1px solid #2E2E2E; text-align: left;">
                             <strong>📋 RINGKASAN REKOMENDASI:</strong><br><br>
                             <span style="color: #10B981;">✅ LANJUTKAN: {param_status['good']} parameter</span><br>
                             <span style="color: #F59E0B;">⚠️ SERVICE: {param_status['service']} parameter</span><br>
                             <span style="color: #EF4444;">🔴 GANTI: {param_status['replace']} parameter</span>
-                    """
+                    """, unsafe_allow_html=True)
                     
                     if param_status["replace"] > 0:
-                        result_html += f'<br><br><span style="color: #EF4444;">🔴 **KESIMPULAN: Ada {param_status["replace"]} parameter yang harus GANTI. Segera lakukan tindakan!**</span>'
+                        st.markdown(f'<br><br><span style="color: #EF4444;">🔴 **KESIMPULAN: Ada {param_status["replace"]} parameter yang harus GANTI. Segera lakukan tindakan!**</span>', unsafe_allow_html=True)
                     elif param_status["service"] > 0:
-                        result_html += f'<br><br><span style="color: #F59E0B;">⚠️ **KESIMPULAN: Ada {param_status["service"]} parameter yang perlu SERVICE. Lakukan inspeksi segera.**</span>'
+                        st.markdown(f'<br><br><span style="color: #F59E0B;">⚠️ **KESIMPULAN: Ada {param_status["service"]} parameter yang perlu SERVICE. Lakukan inspeksi segera.**</span>', unsafe_allow_html=True)
                     else:
-                        result_html += f'<br><br><span style="color: #10B981;">✅ **KESIMPULAN: Semua parameter dalam kondisi baik. Lanjutkan pemakaian normal.**</span>'
+                        st.markdown(f'<br><br><span style="color: #10B981;">✅ **KESIMPULAN: Semua parameter dalam kondisi baik. Lanjutkan pemakaian normal.**</span>', unsafe_allow_html=True)
                     
-                    result_html += """
+                    st.markdown("""
                         </div>
                         <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #3E3E3E;">
                             <p style="font-size: 0.7rem; color: #666; margin: 0;">📊 Berdasarkan 9 parameter yang dimasukkan</p>
                         </div>
                     </div>
-                    """
+                    """, unsafe_allow_html=True)
                     
-                    st.session_state.messages.append({"role": "bot", "content": result_html})
-                    st.session_state.messages.append({"role": "bot", "content": "🔄 Mau cek baterai lain? Klik **Mulai Baru** di sidebar."})
                     st.session_state.step = "done"
-                    st.rerun()
                 else:
                     st.error("Model tidak tersedia")
             except Exception as e:
