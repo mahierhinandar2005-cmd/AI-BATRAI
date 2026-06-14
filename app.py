@@ -72,7 +72,7 @@ PARAM_INFO = {
         "normal": "20% - 80%",
         "warning": "< 20% atau > 80%",
         "danger": "-",
-        "desc": "SOC (State of Charge) adalah level pengisian baterai saat ini. Baterai paling awet di rentang 20-80%. Terlalu rendah atau terlalu tinggi mempercepat degradasi.",
+        "desc": "SOC (State of Charge) adalah level pengisian baterai saat ini. Baterai paling awet di rentang 20-80%.",
         "source": "Dari dashboard mobil listrik",
         "example": "80"
     },
@@ -82,7 +82,7 @@ PARAM_INFO = {
         "normal": "≤ 110%",
         "warning": "110% - 150%",
         "danger": "> 150%",
-        "desc": "R_int (Internal Resistance) adalah hambatan listrik di dalam baterai. Baterai sehat punya R_int sekitar 100%. Semakin tinggi R_int, semakin rusak baterai.",
+        "desc": "R_int (Internal Resistance) adalah hambatan listrik di dalam baterai. Baterai sehat punya R_int sekitar 100%. Semakin tinggi, semakin rusak.",
         "source": "Dari alat diagnostik / BMS",
         "example": "100"
     },
@@ -92,7 +92,7 @@ PARAM_INFO = {
         "normal": "≥ 3.9V",
         "warning": "3.7V - 3.9V",
         "danger": "< 3.7V",
-        "desc": "OCV (Open Circuit Voltage) adalah tegangan baterai saat tidak dipakai. Baterai sehat memiliki OCV antara 3.8V - 4.2V. Di bawah 3.7V tandanya sel baterai rusak.",
+        "desc": "OCV (Open Circuit Voltage) adalah tegangan baterai saat tidak dipakai. Baterai sehat memiliki OCV 3.8V - 4.2V.",
         "source": "Dari voltmeter / BMS",
         "example": "4.15"
     },
@@ -102,10 +102,10 @@ PARAM_INFO = {
         "normal": "-",
         "warning": "-",
         "danger": "-",
-        "desc": "Frequency adalah frekuensi pengukuran EIS (Electrochemical Impedance Spectroscopy). Parameter teknis pengukuran, bukan indikator kesehatan baterai.",
+        "desc": "Frequency adalah frekuensi pengukuran EIS. Parameter teknis, bukan indikator kesehatan baterai.",
         "source": "Dari alat EIS",
         "example": "10",
-        "note": "Parameter teknis, bukan indikator kesehatan"
+        "note": "Parameter teknis"
     },
     "zmod": {
         "name": "📈 Zmod (Ohm)",
@@ -113,7 +113,7 @@ PARAM_INFO = {
         "normal": "≤ 0.015",
         "warning": "0.015 - 0.025",
         "danger": "> 0.025",
-        "desc": "Zmod adalah modulus impedansi (besaran impedansi total baterai). Semakin tinggi Zmod, semakin besar degradasi baterai.",
+        "desc": "Zmod adalah modulus impedansi (besaran impedansi total baterai). Semakin tinggi, semakin besar degradasi.",
         "source": "Dari alat EIS",
         "example": "0.012"
     },
@@ -123,7 +123,7 @@ PARAM_INFO = {
         "normal": "≤ -5°",
         "warning": "-5° - 0°",
         "danger": "> 0°",
-        "desc": "Zphz adalah sudut fase impedansi. Baterai sehat memiliki sudut negatif (bersifat kapasitif). Mendekati 0° atau positif menandakan degradasi.",
+        "desc": "Zphz adalah sudut fase impedansi. Baterai sehat memiliki sudut negatif (kapasitif).",
         "source": "Dari alat EIS",
         "example": "-2.5"
     },
@@ -133,7 +133,7 @@ PARAM_INFO = {
         "normal": "≤ 0.013",
         "warning": "0.013 - 0.018",
         "danger": "> 0.018",
-        "desc": "Zreal adalah komponen resistif (nyata) dari impedansi. Berkorelasi langsung dengan R_int. Semakin tinggi, semakin besar hambatan internal.",
+        "desc": "Zreal adalah komponen resistif dari impedansi. Berkorelasi dengan R_int. Semakin tinggi, semakin besar hambatan.",
         "source": "Dari alat EIS",
         "example": "0.012"
     },
@@ -143,7 +143,7 @@ PARAM_INFO = {
         "normal": "< -0.002",
         "warning": "-0.002 - 0",
         "danger": "> 0",
-        "desc": "Zimg adalah komponen reaktif (imajiner) dari impedansi. Nilai negatif = kapasitif (normal). Nilai positif menandakan perubahan sifat.",
+        "desc": "Zimg adalah komponen reaktif dari impedansi. Nilai negatif = kapasitif (normal).",
         "source": "Dari alat EIS",
         "example": "-0.002"
     }
@@ -187,6 +187,7 @@ if "step" not in st.session_state:
     st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000)\n💡 *Contoh: 100*"}]
     st.session_state.show_info = None
     st.session_state.result = None
+    st.session_state.input_key = 0
 
 # ==================== HEADER ====================
 st.markdown('<div style="text-align: center; padding: 20px 0 10px 0;"><span style="font-size: 2.5rem;">🔋</span><h1 style="color: white; margin: 0;">Battery Assistant</h1><p style="color: #888;">AI-based SOH Prediction | ANN Model</p></div>', unsafe_allow_html=True)
@@ -214,11 +215,8 @@ if st.session_state.show_info and st.session_state.show_info in PARAM_INFO:
         🔴 <strong>Kritis:</strong> {info['danger']}<br>
         🔌 <strong>Sumber:</strong> {info['source']}<br>
         💡 <strong>Contoh:</strong> {info['example']}
+    </div>
     """
-    if info.get('note'):
-        popup_content += f"<br><br>📌 {info['note']}"
-    popup_content += "</div>"
-    
     st.markdown(popup_content, unsafe_allow_html=True)
     if st.button("Tutup", key="close_info", use_container_width=True):
         st.session_state.show_info = None
@@ -268,6 +266,7 @@ if st.session_state.result:
         st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000)\n💡 *Contoh: 100*"}]
         st.session_state.result = None
         st.session_state.show_info = None
+        st.session_state.input_key = 0
         st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
@@ -280,16 +279,15 @@ if st.session_state.result is None:
     col1, col2, col3 = st.columns([4, 1, 1])
     with col1:
         st.markdown(f'<p style="color: #888; font-size: 0.75rem; margin-bottom: 4px;">💡 Contoh: {info["example"]}</p>', unsafe_allow_html=True)
-        user_input = st.text_input("", key="input", placeholder=f"Ketik {info['name']}...", label_visibility="collapsed")
+        # Key dinamis agar input kosong setiap kali berganti step
+        user_input = st.text_input("", key=f"input_{st.session_state.input_key}", placeholder=f"Ketik {info['name']}...", label_visibility="collapsed")
     with col2:
         if st.button("ℹ️", key="info_btn", use_container_width=True):
-            # Set popup, hilangkan yang lama
             st.session_state.show_info = step
     with col3:
         submitted = st.button("✅ Kirim", key="send_btn", use_container_width=True)
     
     if submitted and user_input:
-        # Hilangkan popup jika ada
         st.session_state.show_info = None
         
         st.session_state.messages.append({"role": "user", "content": user_input})
@@ -301,6 +299,7 @@ if st.session_state.result is None:
                 if 0 <= val <= 2000:
                     st.session_state.data["cycle"] = val
                     st.session_state.step = "soc"
+                    st.session_state.input_key += 1  # Reset input box
                     st.session_state.messages.append({"role": "bot", "content": f"✅ Aging cycle: {val:.0f}\n\nMasukkan **SOC (%)** (0-100)\n💡 *Contoh: 80*"})
                 else:
                     st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0-2000. Contoh: 100"})
@@ -309,6 +308,7 @@ if st.session_state.result is None:
                 if 0 <= val <= 100:
                     st.session_state.data["soc"] = val
                     st.session_state.step = "rint"
+                    st.session_state.input_key += 1
                     st.session_state.messages.append({"role": "bot", "content": f"✅ SOC: {val:.0f}%\n\nMasukkan **R_int (%)** (0-200)\n💡 *Contoh: 100*"})
                 else:
                     st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0-100. Contoh: 80"})
@@ -317,6 +317,7 @@ if st.session_state.result is None:
                 if 0 <= val <= 200:
                     st.session_state.data["rint"] = val
                     st.session_state.step = "ocv"
+                    st.session_state.input_key += 1
                     st.session_state.messages.append({"role": "bot", "content": f"✅ R_int: {val:.0f}%\n\nMasukkan **OCV (V)** (3.0-4.5)\n💡 *Contoh: 4.15*"})
                 else:
                     st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0-200. Contoh: 100"})
@@ -325,6 +326,7 @@ if st.session_state.result is None:
                 if 3.0 <= val <= 4.5:
                     st.session_state.data["ocv"] = val
                     st.session_state.step = "freq"
+                    st.session_state.input_key += 1
                     st.session_state.messages.append({"role": "bot", "content": f"✅ OCV: {val:.2f}V\n\nMasukkan **Frequency (Hz)** (0.1-10000)\n💡 *Contoh: 10*"})
                 else:
                     st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 3.0-4.5. Contoh: 4.15"})
@@ -333,6 +335,7 @@ if st.session_state.result is None:
                 if 0.1 <= val <= 10000:
                     st.session_state.data["freq"] = val
                     st.session_state.step = "zmod"
+                    st.session_state.input_key += 1
                     st.session_state.messages.append({"role": "bot", "content": f"✅ Frequency: {val:.2f} Hz\n\nMasukkan **Zmod (Ohm)** (0.005-0.05)\n💡 *Contoh: 0.012*"})
                 else:
                     st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0.1-10000. Contoh: 10"})
@@ -340,16 +343,19 @@ if st.session_state.result is None:
             elif step == "zmod":
                 st.session_state.data["zmod"] = val
                 st.session_state.step = "zphz"
+                st.session_state.input_key += 1
                 st.session_state.messages.append({"role": "bot", "content": f"✅ Zmod: {val:.6f} Ohm\n\nMasukkan **Zphz (deg)** (-90-90)\n💡 *Contoh: -2.5*"})
             
             elif step == "zphz":
                 st.session_state.data["zphz"] = val
                 st.session_state.step = "zreal"
+                st.session_state.input_key += 1
                 st.session_state.messages.append({"role": "bot", "content": f"✅ Zphz: {val:.2f}°\n\nMasukkan **Zreal (Ohm)** (0.005-0.02)\n💡 *Contoh: 0.012*"})
             
             elif step == "zreal":
                 st.session_state.data["zreal"] = val
                 st.session_state.step = "zimg"
+                st.session_state.input_key += 1
                 st.session_state.messages.append({"role": "bot", "content": f"✅ Zreal: {val:.6f} Ohm\n\nMasukkan **Zimg (Ohm)** (-0.01-0.01)\n💡 *Contoh: -0.002*"})
             
             elif step == "zimg":
