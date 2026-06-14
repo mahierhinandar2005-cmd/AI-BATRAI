@@ -22,7 +22,6 @@ st.markdown("""
         padding: 1rem;
     }
     
-    /* Bot message dengan inline button */
     .bot-message-wrapper {
         display: flex;
         align-items: flex-start;
@@ -70,12 +69,6 @@ st.markdown("""
         font-weight: 600;
         cursor: pointer;
         width: fit-content;
-        transition: all 0.2s;
-    }
-    
-    .info-button:hover {
-        background: #10B981;
-        color: white;
     }
     
     .user-message {
@@ -95,23 +88,11 @@ st.markdown("""
         font-weight: 500;
     }
     
-    /* Input area */
-    .input-area {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #0D0D0D;
-        padding: 1rem;
-        border-top: 1px solid #2E2E2E;
-    }
-    
     .input-wrapper {
-        max-width: 900px;
-        margin: 0 auto;
         display: flex;
         gap: 10px;
         align-items: center;
+        margin-top: 10px;
     }
     
     .input-wrapper input {
@@ -124,11 +105,6 @@ st.markdown("""
         font-size: 0.9rem;
     }
     
-    .input-wrapper input:focus {
-        outline: none;
-        border-color: #10B981;
-    }
-    
     .input-wrapper button {
         background: linear-gradient(135deg, #10B981, #06B6D4);
         border: none;
@@ -137,53 +113,6 @@ st.markdown("""
         color: white;
         font-weight: 600;
         cursor: pointer;
-    }
-    
-    /* Popup overlay */
-    .popup-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-    
-    .popup-content {
-        background: #1E1E1E;
-        border-radius: 24px;
-        padding: 24px;
-        max-width: 500px;
-        border: 1px solid #10B981;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    }
-    
-    .popup-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-    
-    .popup-header h3 {
-        color: #10B981;
-        margin: 0;
-    }
-    
-    .popup-close {
-        background: none;
-        border: none;
-        color: #888;
-        font-size: 1.5rem;
-        cursor: pointer;
-    }
-    
-    .popup-close:hover {
-        color: white;
     }
     
     .result-card {
@@ -226,6 +155,12 @@ st.markdown("""
         font-size: 0.7rem;
         padding: 20px;
         margin-top: 100px;
+    }
+    
+    .stPopover {
+        background: #1E1E1E !important;
+        border: 1px solid #10B981 !important;
+        border-radius: 16px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -335,8 +270,6 @@ if "step" not in st.session_state:
     st.session_state.step = "cycle"
     st.session_state.data = {}
     st.session_state.messages = []
-    st.session_state.show_popup = None
-    st.session_state.waiting_for_close = False
 
 # ==================== HEADER ====================
 st.markdown("""
@@ -362,24 +295,12 @@ for msg in st.session_state.messages:
             </div>
             """, unsafe_allow_html=True)
         else:
-            # Cek apakah ini pesan dengan tombol info
-            if "info_param" in msg:
-                st.markdown(f"""
-                <div class="bot-message-wrapper">
-                    <div class="bot-avatar">🤖</div>
-                    <div class="bot-content">
-                        <div class="bot-bubble">{msg["content"]}</div>
-                        <button class="info-button" onclick="parent.window.location.href='?info={msg["info_param"]}'">ℹ️ Info Parameter</button>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="bot-message-wrapper">
-                    <div class="bot-avatar">🤖</div>
-                    <div class="bot-bubble">{msg["content"]}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="bot-message-wrapper">
+                <div class="bot-avatar">🤖</div>
+                <div class="bot-bubble">{msg["content"]}</div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
         <div class="user-message">
@@ -389,386 +310,315 @@ for msg in st.session_state.messages:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== TAMPILKAN BOT MESSAGE UNTUK STEP SAAT INI ====================
+# ==================== TAMPILKAN FORM INPUT SESUAI STEP ====================
 current_step = st.session_state.step
 
-if current_step == "cycle" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["cycle"]
-    st.markdown(f"""
-    <div class="bot-message-wrapper">
-        <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>Aging Cycle</strong> (0-2000)<br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=cycle'">ℹ️ Info Parameter</button>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+# Fungsi untuk menampilkan input dengan tombol info menggunakan st.popover
+def show_input_with_info(param_key, label, placeholder, range_text, input_key):
+    param_info = PARAM_INFO[param_key]
     
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_val = st.text_input("", placeholder="Contoh: 100", key="input_val", label_visibility="collapsed")
+        user_val = st.text_input(label, placeholder=placeholder, key=input_key, label_visibility="collapsed")
     with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    if 0 <= val <= 2000:
-                        st.session_state.data["cycle"] = val
-                        st.session_state.messages.append({"role": "user", "content": f"Aging cycle: {val:.0f}"})
-                        st.session_state.step = "soc"
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Masukkan angka antara 0-2000")
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
+        with st.popover("ℹ️ Info", use_container_width=True):
+            st.markdown(f"**{param_info['name']}**")
+            st.markdown(f"📖 {param_info['detail']}")
+            st.markdown(f"📊 **Rentang:** {param_info['range']}")
+            if param_info.get('good') and param_info.get('bad'):
+                st.markdown(f"✅ **Nilai Baik:** {param_info['good']}")
+                st.markdown(f"❌ **Nilai Buruk:** {param_info['bad']}")
+            elif param_info.get('note'):
+                st.markdown(f"📌 **Catatan:** {param_info['note']}")
+            st.markdown(f"🔌 **Sumber:** {param_info['source']}")
+    
+    return user_val
 
-elif current_step == "soc" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["soc"]
+# STEP 1: Aging Cycle
+if current_step == "cycle":
     st.markdown(f"""
     <div class="bot-message-wrapper">
         <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>SOC (%)</strong> (0-100)<br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=soc'">ℹ️ Info Parameter</button>
+        <div class="bot-bubble">
+            Masukkan <strong>Aging Cycle</strong> (0-2000)<br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['cycle']['desc']}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: 80", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    if 0 <= val <= 100:
-                        st.session_state.data["soc"] = val
-                        st.session_state.messages.append({"role": "user", "content": f"SOC: {val:.0f}%"})
-                        st.session_state.step = "rint"
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Masukkan angka antara 0-100")
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
-
-elif current_step == "rint" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["rint"]
-    st.markdown(f"""
-    <div class="bot-message-wrapper">
-        <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>R_int (%)</strong> (0-200)<br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=rint'">ℹ️ Info Parameter</button>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    user_val = show_input_with_info("cycle", "", "Contoh: 100", "0-2000", "cycle_input")
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: 100", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    if 0 <= val <= 200:
-                        st.session_state.data["rint"] = val
-                        st.session_state.messages.append({"role": "user", "content": f"R_int: {val:.0f}%"})
-                        st.session_state.step = "ocv"
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Masukkan angka antara 0-200")
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
-
-elif current_step == "ocv" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["ocv"]
-    st.markdown(f"""
-    <div class="bot-message-wrapper">
-        <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>OCV (V)</strong> (3.0-4.5)<br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=ocv'">ℹ️ Info Parameter</button>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: 4.15", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    if 3.0 <= val <= 4.5:
-                        st.session_state.data["ocv"] = val
-                        st.session_state.messages.append({"role": "user", "content": f"OCV: {val:.2f}V"})
-                        st.session_state.step = "freq"
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Masukkan angka antara 3.0-4.5")
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
-
-elif current_step == "freq" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["freq"]
-    st.markdown(f"""
-    <div class="bot-message-wrapper">
-        <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>Frequency (Hz)</strong> (0.1-10000)<br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=freq'">ℹ️ Info Parameter</button>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: 10", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    if 0.1 <= val <= 10000:
-                        st.session_state.data["freq"] = val
-                        st.session_state.messages.append({"role": "user", "content": f"Frequency: {val:.2f} Hz"})
-                        st.session_state.step = "zmod"
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Masukkan angka antara 0.1-10000")
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
-
-elif current_step == "zmod" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["zmod"]
-    st.markdown(f"""
-    <div class="bot-message-wrapper">
-        <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>Zmod (Ohm)</strong><br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=zmod'">ℹ️ Info Parameter</button>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: 0.012", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    st.session_state.data["zmod"] = val
-                    st.session_state.messages.append({"role": "user", "content": f"Zmod: {val:.6f} Ohm"})
-                    st.session_state.step = "zphz"
+    if st.button("✅ Kirim", key="send_cycle", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                if 0 <= val <= 2000:
+                    st.session_state.data["cycle"] = val
+                    st.session_state.messages.append({"role": "user", "content": f"Aging cycle: {val:.0f}"})
+                    st.session_state.step = "soc"
                     st.rerun()
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
+                else:
+                    st.error("⚠️ Masukkan angka antara 0-2000")
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
 
-elif current_step == "zphz" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["zphz"]
+# STEP 2: SOC
+elif current_step == "soc":
     st.markdown(f"""
     <div class="bot-message-wrapper">
         <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>Zphz (deg)</strong><br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=zphz'">ℹ️ Info Parameter</button>
+        <div class="bot-bubble">
+            Masukkan <strong>SOC (%)</strong> (0-100)<br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['soc']['desc']}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: -2.5", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    st.session_state.data["zphz"] = val
-                    st.session_state.messages.append({"role": "user", "content": f"Zphz: {val:.2f}°"})
-                    st.session_state.step = "zreal"
+    user_val = show_input_with_info("soc", "", "Contoh: 80", "0-100", "soc_input")
+    
+    if st.button("✅ Kirim", key="send_soc", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                if 0 <= val <= 100:
+                    st.session_state.data["soc"] = val
+                    st.session_state.messages.append({"role": "user", "content": f"SOC: {val:.0f}%"})
+                    st.session_state.step = "rint"
                     st.rerun()
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
+                else:
+                    st.error("⚠️ Masukkan angka antara 0-100")
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
 
-elif current_step == "zreal" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["zreal"]
+# STEP 3: R_int
+elif current_step == "rint":
     st.markdown(f"""
     <div class="bot-message-wrapper">
         <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>Zreal (Ohm)</strong><br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=zreal'">ℹ️ Info Parameter</button>
+        <div class="bot-bubble">
+            Masukkan <strong>R_int (%)</strong> (0-200)<br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['rint']['desc']}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: 0.012", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    st.session_state.data["zreal"] = val
-                    st.session_state.messages.append({"role": "user", "content": f"Zreal: {val:.6f} Ohm"})
-                    st.session_state.step = "zimg"
+    user_val = show_input_with_info("rint", "", "Contoh: 100", "0-200", "rint_input")
+    
+    if st.button("✅ Kirim", key="send_rint", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                if 0 <= val <= 200:
+                    st.session_state.data["rint"] = val
+                    st.session_state.messages.append({"role": "user", "content": f"R_int: {val:.0f}%"})
+                    st.session_state.step = "ocv"
                     st.rerun()
-                except:
-                    st.error("⚠️ Masukkan angka yang valid")
+                else:
+                    st.error("⚠️ Masukkan angka antara 0-200")
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
 
-elif current_step == "zimg" and not st.session_state.waiting_for_close:
-    param_info = PARAM_INFO["zimg"]
+# STEP 4: OCV
+elif current_step == "ocv":
     st.markdown(f"""
     <div class="bot-message-wrapper">
         <div class="bot-avatar">🤖</div>
-        <div class="bot-content">
-            <div class="bot-bubble">
-                Masukkan <strong>Zimg (Ohm)</strong><br>
-                <span style="font-size: 0.7rem; color: #888;">{param_info['desc']}</span>
-            </div>
-            <button class="info-button" onclick="parent.window.location.href='?info=zimg'">ℹ️ Info Parameter</button>
+        <div class="bot-bubble">
+            Masukkan <strong>OCV (V)</strong> (3.0-4.5)<br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['ocv']['desc']}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_val = st.text_input("", placeholder="Contoh: -0.002", key="input_val", label_visibility="collapsed")
-    with col2:
-        if st.button("✅ Kirim", key="send_btn", use_container_width=True):
-            if user_val:
-                try:
-                    val = float(user_val)
-                    st.session_state.data["zimg"] = val
-                    st.session_state.messages.append({"role": "user", "content": f"Zimg: {val:.6f} Ohm"})
-                    
-                    # ==================== PREDIKSI SOH ====================
-                    input_data = np.array([[
-                        st.session_state.data["cycle"],
-                        st.session_state.data["soc"],
-                        st.session_state.data["rint"],
-                        st.session_state.data["ocv"],
-                        st.session_state.data["freq"],
-                        st.session_state.data["zmod"],
-                        st.session_state.data["zphz"],
-                        st.session_state.data["zreal"],
-                        st.session_state.data["zimg"]
-                    ]])
-                    
-                    input_scaled = scaler_X.transform(input_data)
-                    pred_scaled = model.predict(input_scaled)
-                    soh = scaler_y.inverse_transform(pred_scaled.reshape(-1, 1))[0][0]
-                    
-                    if soh >= 90:
-                        status = "SEHAT"
-                        status_class = "healthy"
-                        msg = "✅ Baterai dalam kondisi sangat baik! Lanjutkan pemakaian normal."
-                    elif soh >= 70:
-                        status = "WASPADA"
-                        status_class = "warning"
-                        msg = "⚠️ Baterai mulai menunjukkan degradasi. Segera lakukan inspeksi."
-                    else:
-                        status = "KRITIS"
-                        status_class = "critical"
-                        msg = "🔴 Kesehatan baterai kritis! Segera ganti baterai."
-                    
-                    result_html = f"""
-                    <div class="result-card">
-                        <div class="soh-value">{soh:.1f}%</div>
-                        <div class="status-badge {status_class}">{status}</div>
-                        <p style="color: #ccc; margin-top: 12px;">{msg}</p>
-                        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #3E3E3E;">
-                            <p style="font-size: 0.7rem; color: #666; margin: 0;">
-                            📊 Berdasarkan 9 parameter yang dimasukkan
-                            </p>
-                        </div>
+    user_val = show_input_with_info("ocv", "", "Contoh: 4.15", "3.0-4.5", "ocv_input")
+    
+    if st.button("✅ Kirim", key="send_ocv", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                if 3.0 <= val <= 4.5:
+                    st.session_state.data["ocv"] = val
+                    st.session_state.messages.append({"role": "user", "content": f"OCV: {val:.2f}V"})
+                    st.session_state.step = "freq"
+                    st.rerun()
+                else:
+                    st.error("⚠️ Masukkan angka antara 3.0-4.5")
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
+
+# STEP 5: Frequency
+elif current_step == "freq":
+    st.markdown(f"""
+    <div class="bot-message-wrapper">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-bubble">
+            Masukkan <strong>Frequency (Hz)</strong> (0.1-10000)<br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['freq']['desc']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    user_val = show_input_with_info("freq", "", "Contoh: 10", "0.1-10000", "freq_input")
+    
+    if st.button("✅ Kirim", key="send_freq", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                if 0.1 <= val <= 10000:
+                    st.session_state.data["freq"] = val
+                    st.session_state.messages.append({"role": "user", "content": f"Frequency: {val:.2f} Hz"})
+                    st.session_state.step = "zmod"
+                    st.rerun()
+                else:
+                    st.error("⚠️ Masukkan angka antara 0.1-10000")
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
+
+# STEP 6: Zmod
+elif current_step == "zmod":
+    st.markdown(f"""
+    <div class="bot-message-wrapper">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-bubble">
+            Masukkan <strong>Zmod (Ohm)</strong><br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['zmod']['desc']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    user_val = show_input_with_info("zmod", "", "Contoh: 0.012", "0.005-0.05", "zmod_input")
+    
+    if st.button("✅ Kirim", key="send_zmod", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                st.session_state.data["zmod"] = val
+                st.session_state.messages.append({"role": "user", "content": f"Zmod: {val:.6f} Ohm"})
+                st.session_state.step = "zphz"
+                st.rerun()
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
+
+# STEP 7: Zphz
+elif current_step == "zphz":
+    st.markdown(f"""
+    <div class="bot-message-wrapper">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-bubble">
+            Masukkan <strong>Zphz (deg)</strong><br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['zphz']['desc']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    user_val = show_input_with_info("zphz", "", "Contoh: -2.5", "-90 - 90", "zphz_input")
+    
+    if st.button("✅ Kirim", key="send_zphz", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                st.session_state.data["zphz"] = val
+                st.session_state.messages.append({"role": "user", "content": f"Zphz: {val:.2f}°"})
+                st.session_state.step = "zreal"
+                st.rerun()
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
+
+# STEP 8: Zreal
+elif current_step == "zreal":
+    st.markdown(f"""
+    <div class="bot-message-wrapper">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-bubble">
+            Masukkan <strong>Zreal (Ohm)</strong><br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['zreal']['desc']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    user_val = show_input_with_info("zreal", "", "Contoh: 0.012", "0.005-0.02", "zreal_input")
+    
+    if st.button("✅ Kirim", key="send_zreal", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                st.session_state.data["zreal"] = val
+                st.session_state.messages.append({"role": "user", "content": f"Zreal: {val:.6f} Ohm"})
+                st.session_state.step = "zimg"
+                st.rerun()
+            except:
+                st.error("⚠️ Masukkan angka yang valid")
+
+# STEP 9: Zimg (terakhir, langsung prediksi)
+elif current_step == "zimg":
+    st.markdown(f"""
+    <div class="bot-message-wrapper">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-bubble">
+            Masukkan <strong>Zimg (Ohm)</strong><br>
+            <span style="font-size: 0.7rem; color: #888;">{PARAM_INFO['zimg']['desc']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    user_val = show_input_with_info("zimg", "", "Contoh: -0.002", "-0.01 - 0.01", "zimg_input")
+    
+    if st.button("✅ Kirim", key="send_zimg", use_container_width=True):
+        if user_val:
+            try:
+                val = float(user_val)
+                st.session_state.data["zimg"] = val
+                st.session_state.messages.append({"role": "user", "content": f"Zimg: {val:.6f} Ohm"})
+                
+                # ==================== PREDIKSI SOH ====================
+                input_data = np.array([[
+                    st.session_state.data["cycle"],
+                    st.session_state.data["soc"],
+                    st.session_state.data["rint"],
+                    st.session_state.data["ocv"],
+                    st.session_state.data["freq"],
+                    st.session_state.data["zmod"],
+                    st.session_state.data["zphz"],
+                    st.session_state.data["zreal"],
+                    st.session_state.data["zimg"]
+                ]])
+                
+                input_scaled = scaler_X.transform(input_data)
+                pred_scaled = model.predict(input_scaled)
+                soh = scaler_y.inverse_transform(pred_scaled.reshape(-1, 1))[0][0]
+                
+                if soh >= 90:
+                    status = "SEHAT"
+                    status_class = "healthy"
+                    msg = "✅ Baterai dalam kondisi sangat baik! Lanjutkan pemakaian normal."
+                elif soh >= 70:
+                    status = "WASPADA"
+                    status_class = "warning"
+                    msg = "⚠️ Baterai mulai menunjukkan degradasi. Segera lakukan inspeksi."
+                else:
+                    status = "KRITIS"
+                    status_class = "critical"
+                    msg = "🔴 Kesehatan baterai kritis! Segera ganti baterai."
+                
+                result_html = f"""
+                <div class="result-card">
+                    <div class="soh-value">{soh:.1f}%</div>
+                    <div class="status-badge {status_class}">{status}</div>
+                    <p style="color: #ccc; margin-top: 12px;">{msg}</p>
+                    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #3E3E3E;">
+                        <p style="font-size: 0.7rem; color: #666; margin: 0;">
+                        📊 Berdasarkan 9 parameter yang dimasukkan
+                        </p>
                     </div>
-                    """
-                    
-                    st.session_state.messages.append({"role": "bot", "content": result_html})
-                    st.session_state.messages.append({"role": "bot", "content": "🔄 Mau cek baterai lain? Klik **Mulai Baru** di sidebar."})
-                    st.session_state.step = "done"
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"⚠️ Error: {e}")
-
-# ==================== POPUP INFO ====================
-import urllib.parse
-
-query_params = st.query_params
-if "info" in query_params:
-    param_key = query_params["info"]
-    if param_key in PARAM_INFO:
-        st.session_state.show_popup = param_key
-        st.session_state.waiting_for_close = True
-
-if st.session_state.show_popup:
-    info = PARAM_INFO[st.session_state.show_popup]
-    
-    # Popup overlay
-    st.markdown(f"""
-    <div class="popup-overlay">
-        <div class="popup-content">
-            <div class="popup-header">
-                <h3>ℹ️ {info['name']}</h3>
-                <button class="popup-close" onclick="parent.window.location.href='?'">✖️</button>
-            </div>
-            <p><strong>📖 Penjelasan:</strong> {info['detail']}</p>
-            <p><strong>📊 Rentang:</strong> {info['range']}</p>
-    """, unsafe_allow_html=True)
-    
-    if info.get('good') and info.get('bad'):
-        st.markdown(f"""
-            <p><strong>✅ Nilai Baik:</strong> {info['good']}</p>
-            <p><strong>❌ Nilai Buruk:</strong> {info['bad']}</p>
-        """, unsafe_allow_html=True)
-    elif info.get('note'):
-        st.markdown(f"""
-            <p><strong>📌 Catatan:</strong> {info['note']}</p>
-        """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
-            <p><strong>🔌 Sumber Data:</strong> {info['source']}</p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Tombol close di Streamlit sebagai fallback
-    if st.button("Tutup Popup", key="close_popup"):
-        st.session_state.show_popup = None
-        st.session_state.waiting_for_close = False
-        st.rerun()
+                </div>
+                """
+                
+                st.session_state.messages.append({"role": "bot", "content": result_html})
+                st.session_state.messages.append({"role": "bot", "content": "🔄 Mau cek baterai lain? Klik **Mulai Baru** di sidebar."})
+                st.session_state.step = "done"
+                st.rerun()
+            except Exception as e:
+                st.error(f"⚠️ Error: {e}")
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
@@ -807,8 +657,6 @@ with st.sidebar:
         st.session_state.step = "cycle"
         st.session_state.data = {}
         st.session_state.messages = []
-        st.session_state.show_popup = None
-        st.session_state.waiting_for_close = False
         st.rerun()
     
     st.caption("© 2026 | Project SC 2026")
