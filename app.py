@@ -32,6 +32,8 @@ st.markdown("""
     .result-soh { font-size: 3rem; font-weight: 800; margin: 0; }
     .result-status { display: inline-block; padding: 6px 16px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; }
     
+    .info-popup { background: #1E1E1E; border-radius: 16px; padding: 16px; margin: 16px 0; border-left: 4px solid #10B981; }
+    
     .footer { text-align: center; color: #666; font-size: 0.7rem; padding: 20px; margin-top: 80px; }
     hr { border-color: #2E2E2E; margin: 20px 0; }
 </style>
@@ -54,15 +56,15 @@ except:
 
 # ==================== PARAMETER INFO ====================
 PARAM_INFO = {
-    "cycle": {"name": "🔄 Aging Cycle", "range": "0-2000", "normal": "<300", "warning": "300-600", "danger": ">600", "desc": "Jumlah siklus charge-discharge. Semakin tinggi, baterai semakin aus."},
-    "soc": {"name": "🔋 SOC (%)", "range": "0-100", "normal": "20-80%", "warning": "<20% atau >80%", "danger": "-", "desc": "Level pengisian baterai. Ideal 20-80%."},
-    "rint": {"name": "⚡ R_int (%)", "range": "0-200", "normal": "≤110%", "warning": "110-150%", "danger": ">150%", "desc": "Internal resistance. Semakin tinggi, semakin rusak."},
-    "ocv": {"name": "🔌 OCV (V)", "range": "3.0-4.5", "normal": "≥3.9V", "warning": "3.7-3.9V", "danger": "<3.7V", "desc": "Tegangan diam baterai."},
-    "freq": {"name": "📊 Frequency (Hz)", "range": "0.1-10000", "normal": "-", "warning": "-", "danger": "-", "desc": "Frekuensi pengukuran EIS."},
-    "zmod": {"name": "📈 Zmod (Ohm)", "range": "0.005-0.05", "normal": "≤0.015", "warning": "0.015-0.025", "danger": ">0.025", "desc": "Modulus impedansi."},
-    "zphz": {"name": "🔄 Zphz (deg)", "range": "-90-90", "normal": "≤-5°", "warning": "-5°-0°", "danger": ">0°", "desc": "Sudut fase impedansi."},
-    "zreal": {"name": "📉 Zreal (Ohm)", "range": "0.005-0.02", "normal": "≤0.013", "warning": "0.013-0.018", "danger": ">0.018", "desc": "Resistansi nyata."},
-    "zimg": {"name": "🌀 Zimg (Ohm)", "range": "-0.01-0.01", "normal": "< -0.002", "warning": "-0.002-0", "danger": ">0", "desc": "Reaktansi imajiner."}
+    "cycle": {"name": "🔄 Aging Cycle", "range": "0-2000", "normal": "<300", "warning": "300-600", "danger": ">600", "desc": "Jumlah siklus charge-discharge. Semakin tinggi, baterai semakin aus.", "example": "100"},
+    "soc": {"name": "🔋 SOC (%)", "range": "0-100", "normal": "20-80%", "warning": "<20% atau >80%", "danger": "-", "desc": "Level pengisian baterai. Ideal 20-80%.", "example": "80"},
+    "rint": {"name": "⚡ R_int (%)", "range": "0-200", "normal": "≤110%", "warning": "110-150%", "danger": ">150%", "desc": "Internal resistance. Semakin tinggi, semakin rusak.", "example": "100"},
+    "ocv": {"name": "🔌 OCV (V)", "range": "3.0-4.5", "normal": "≥3.9V", "warning": "3.7-3.9V", "danger": "<3.7V", "desc": "Tegangan diam baterai.", "example": "4.15"},
+    "freq": {"name": "📊 Frequency (Hz)", "range": "0.1-10000", "normal": "-", "warning": "-", "danger": "-", "desc": "Frekuensi pengukuran EIS.", "example": "10"},
+    "zmod": {"name": "📈 Zmod (Ohm)", "range": "0.005-0.05", "normal": "≤0.015", "warning": "0.015-0.025", "danger": ">0.025", "desc": "Modulus impedansi.", "example": "0.012"},
+    "zphz": {"name": "🔄 Zphz (deg)", "range": "-90-90", "normal": "≤-5°", "warning": "-5°-0°", "danger": ">0°", "desc": "Sudut fase impedansi.", "example": "-2.5"},
+    "zreal": {"name": "📉 Zreal (Ohm)", "range": "0.005-0.02", "normal": "≤0.013", "warning": "0.013-0.018", "danger": ">0.018", "desc": "Resistansi nyata.", "example": "0.012"},
+    "zimg": {"name": "🌀 Zimg (Ohm)", "range": "-0.01-0.01", "normal": "< -0.002", "warning": "-0.002-0", "danger": ">0", "desc": "Reaktansi imajiner.", "example": "-0.002"}
 }
 
 # ==================== ANALISIS ====================
@@ -100,7 +102,7 @@ def analyze(key, val):
 if "step" not in st.session_state:
     st.session_state.step = "cycle"
     st.session_state.data = {}
-    st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000):"}]
+    st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000)\n💡 *Contoh: 100*"}]
     st.session_state.show_info = None
     st.session_state.result = None
 
@@ -115,6 +117,24 @@ for msg in st.session_state.messages:
         st.markdown(f'<div class="bot-message"><div class="bot-avatar">🤖</div><div class="bot-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div class="user-message"><div class="user-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
+
+# ==================== POPUP INFO ====================
+if st.session_state.show_info and st.session_state.show_info in PARAM_INFO:
+    info = PARAM_INFO[st.session_state.show_info]
+    st.markdown(f"""
+    <div class="info-popup">
+        <strong>ℹ️ {info['name']}</strong><br>
+        📖 {info['desc']}<br>
+        📊 <strong>Rentang:</strong> {info['range']}<br>
+        ✅ <strong>Normal:</strong> {info['normal']}<br>
+        ⚠️ <strong>Waspada:</strong> {info['warning']}<br>
+        🔴 <strong>Kritis:</strong> {info['danger']}<br>
+        💡 <strong>Contoh:</strong> {info['example']}
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("Tutup", key="close_info", use_container_width=True):
+        st.session_state.show_info = None
+        st.rerun()
 
 # ==================== HASIL PREDIKSI ====================
 if st.session_state.result:
@@ -157,8 +177,9 @@ if st.session_state.result:
     if st.button("🔄 Mulai Baru", use_container_width=True):
         st.session_state.step = "cycle"
         st.session_state.data = {}
-        st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000):"}]
+        st.session_state.messages = [{"role": "bot", "content": "👋 Halo! Aku **Battery Assistant** 🤖\n\nAyo cek kesehatan baterai mobil listrikmu!\n\nMasukkan **Aging Cycle** (0-2000)\n💡 *Contoh: 100*"}]
         st.session_state.result = None
+        st.session_state.show_info = None
         st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
@@ -166,30 +187,17 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ==================== INPUT FORM (jika belum selesai) ====================
 if st.session_state.result is None:
     step = st.session_state.step
+    info = PARAM_INFO[step]
     
     col1, col2, col3 = st.columns([4, 1, 1])
     with col1:
-        user_input = st.text_input("", key="input", placeholder="Ketik jawabanmu...", label_visibility="collapsed")
+        st.markdown(f'<p style="color: #888; font-size: 0.75rem; margin-bottom: 4px;">💡 Contoh: {info["example"]}</p>', unsafe_allow_html=True)
+        user_input = st.text_input("", key="input", placeholder=f"Ketik {info['name']}...", label_visibility="collapsed")
     with col2:
         if st.button("ℹ️", key="info_btn", use_container_width=True):
             st.session_state.show_info = step
     with col3:
         submitted = st.button("✅ Kirim", key="send_btn", use_container_width=True)
-    
-    # Popup info
-    if st.session_state.show_info and st.session_state.show_info in PARAM_INFO:
-        info = PARAM_INFO[st.session_state.show_info]
-        st.info(f"""
-        **{info['name']}**
-        📖 {info['desc']}
-        📊 **Rentang:** {info['range']}
-        ✅ **Normal:** {info['normal']}
-        ⚠️ **Waspada:** {info['warning']}
-        🔴 **Kritis:** {info['danger']}
-        """)
-        if st.button("Tutup", key="close_info"):
-            st.session_state.show_info = None
-            st.rerun()
     
     if submitted and user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
@@ -201,56 +209,56 @@ if st.session_state.result is None:
                 if 0 <= val <= 2000:
                     st.session_state.data["cycle"] = val
                     st.session_state.step = "soc"
-                    st.session_state.messages.append({"role": "bot", "content": f"✅ Aging cycle: {val:.0f}\n\nMasukkan **SOC (%)** (0-100):"})
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ Aging cycle: {val:.0f}\n\nMasukkan **SOC (%)** (0-100)\n💡 *Contoh: 80*"})
                 else:
-                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-2000"})
+                    st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0-2000. Contoh: 100"})
             
             elif step == "soc":
                 if 0 <= val <= 100:
                     st.session_state.data["soc"] = val
                     st.session_state.step = "rint"
-                    st.session_state.messages.append({"role": "bot", "content": f"✅ SOC: {val:.0f}%\n\nMasukkan **R_int (%)** (0-200):"})
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ SOC: {val:.0f}%\n\nMasukkan **R_int (%)** (0-200)\n💡 *Contoh: 100*"})
                 else:
-                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-100"})
+                    st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0-100. Contoh: 80"})
             
             elif step == "rint":
                 if 0 <= val <= 200:
                     st.session_state.data["rint"] = val
                     st.session_state.step = "ocv"
-                    st.session_state.messages.append({"role": "bot", "content": f"✅ R_int: {val:.0f}%\n\nMasukkan **OCV (V)** (3.0-4.5):"})
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ R_int: {val:.0f}%\n\nMasukkan **OCV (V)** (3.0-4.5)\n💡 *Contoh: 4.15*"})
                 else:
-                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0-200"})
+                    st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0-200. Contoh: 100"})
             
             elif step == "ocv":
                 if 3.0 <= val <= 4.5:
                     st.session_state.data["ocv"] = val
                     st.session_state.step = "freq"
-                    st.session_state.messages.append({"role": "bot", "content": f"✅ OCV: {val:.2f}V\n\nMasukkan **Frequency (Hz)** (0.1-10000):"})
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ OCV: {val:.2f}V\n\nMasukkan **Frequency (Hz)** (0.1-10000)\n💡 *Contoh: 10*"})
                 else:
-                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 3.0-4.5"})
+                    st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 3.0-4.5. Contoh: 4.15"})
             
             elif step == "freq":
                 if 0.1 <= val <= 10000:
                     st.session_state.data["freq"] = val
                     st.session_state.step = "zmod"
-                    st.session_state.messages.append({"role": "bot", "content": f"✅ Frequency: {val:.2f} Hz\n\nMasukkan **Zmod (Ohm)** (0.005-0.05):"})
+                    st.session_state.messages.append({"role": "bot", "content": f"✅ Frequency: {val:.2f} Hz\n\nMasukkan **Zmod (Ohm)** (0.005-0.05)\n💡 *Contoh: 0.012*"})
                 else:
-                    st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka 0.1-10000"})
+                    st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka 0.1-10000. Contoh: 10"})
             
             elif step == "zmod":
                 st.session_state.data["zmod"] = val
                 st.session_state.step = "zphz"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ Zmod: {val:.6f} Ohm\n\nMasukkan **Zphz (deg)** (-90-90):"})
+                st.session_state.messages.append({"role": "bot", "content": f"✅ Zmod: {val:.6f} Ohm\n\nMasukkan **Zphz (deg)** (-90-90)\n💡 *Contoh: -2.5*"})
             
             elif step == "zphz":
                 st.session_state.data["zphz"] = val
                 st.session_state.step = "zreal"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ Zphz: {val:.2f}°\n\nMasukkan **Zreal (Ohm)** (0.005-0.02):"})
+                st.session_state.messages.append({"role": "bot", "content": f"✅ Zphz: {val:.2f}°\n\nMasukkan **Zreal (Ohm)** (0.005-0.02)\n💡 *Contoh: 0.012*"})
             
             elif step == "zreal":
                 st.session_state.data["zreal"] = val
                 st.session_state.step = "zimg"
-                st.session_state.messages.append({"role": "bot", "content": f"✅ Zreal: {val:.6f} Ohm\n\nMasukkan **Zimg (Ohm)** (-0.01-0.01):"})
+                st.session_state.messages.append({"role": "bot", "content": f"✅ Zreal: {val:.6f} Ohm\n\nMasukkan **Zimg (Ohm)** (-0.01-0.01)\n💡 *Contoh: -0.002*"})
             
             elif step == "zimg":
                 st.session_state.data["zimg"] = val
@@ -287,7 +295,7 @@ if st.session_state.result is None:
                     st.session_state.messages.append({"role": "bot", "content": "⚠️ Model tidak tersedia"})
         
         except ValueError:
-            st.session_state.messages.append({"role": "bot", "content": "⚠️ Masukkan angka yang valid"})
+            st.session_state.messages.append({"role": "bot", "content": f"⚠️ Masukkan angka yang valid. Contoh: {info['example']}"})
         
         st.rerun()
 
