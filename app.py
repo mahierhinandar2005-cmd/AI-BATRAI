@@ -144,6 +144,22 @@ st.markdown("""
     .warning { background: rgba(245, 158, 11, 0.2); color: #F59E0B; }
     .critical { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
     
+    .analysis-card {
+        background: #1A1A1A;
+        border-radius: 16px;
+        padding: 16px;
+        margin: 12px 0;
+        border-left: 4px solid;
+    }
+    
+    .analysis-good { border-left-color: #10B981; }
+    .analysis-service { border-left-color: #F59E0B; }
+    .analysis-replace { border-left-color: #EF4444; }
+    
+    .param-status-good { color: #10B981; font-weight: 600; }
+    .param-status-service { color: #F59E0B; font-weight: 600; }
+    .param-status-replace { color: #EF4444; font-weight: 600; }
+    
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -265,6 +281,76 @@ PARAM_INFO = {
     }
 }
 
+# ==================== FUNGSI ANALISIS PER PARAMETER ====================
+def analyze_parameter(param_key, value):
+    """Return (status, message, action) where status: 'good', 'service', 'replace'"""
+    if param_key == "cycle":
+        if value < 300:
+            return "good", "Masih rendah, baterai relatif baru", "✅ LANJUTKAN - Normal use"
+        elif value < 600:
+            return "service", "Mulai memasuki fase menua", "⚠️ SERVICE - Pantau performa berkala"
+        else:
+            return "replace", "Sudah tinggi, mendekati akhir masa pakai", "🔴 GANTI - Inspeksi menyeluruh"
+    
+    elif param_key == "soc":
+        if 20 <= value <= 80:
+            return "good", "Dalam rentang optimal (20-80%)", "✅ LANJUTKAN - Kebiasaan pengisian baik"
+        elif value < 20:
+            return "service", "Terlalu rendah! Berisiko deep discharge", "⚠️ SERVICE - Segera charge"
+        else:
+            return "service", "Terlalu tinggi (>80%)", "⚠️ SERVICE - Kurangi charge penuh"
+    
+    elif param_key == "rint":
+        if value <= 110:
+            return "good", "Normal, hambatan internal baik", "✅ LANJUTKAN - Pertahankan kondisi"
+        elif value <= 150:
+            return "service", "Mulai meningkat, indikasi degradasi", "⚠️ SERVICE - Lakukan balancing cell"
+        else:
+            return "replace", "Sangat tinggi! Baterai rusak", "🔴 GANTI - Segera ganti baterai"
+    
+    elif param_key == "ocv":
+        if value >= 3.9:
+            return "good", "Normal, tegangan dalam batas sehat", "✅ LANJUTKAN - Tidak perlu tindakan"
+        elif value >= 3.7:
+            return "service", "Mulai menurun, perhatikan performa", "⚠️ SERVICE - Periksa sistem pengisian"
+        else:
+            return "replace", "Sangat rendah! Sel baterai bermasalah", "🔴 GANTI - Segera ganti baterai"
+    
+    elif param_key == "zmod":
+        if value <= 0.015:
+            return "good", "Rendah, impedansi normal", "✅ LANJUTKAN - Normal"
+        elif value <= 0.025:
+            return "service", "Mulai meningkat, perhatikan", "⚠️ SERVICE - Monitor berkala"
+        else:
+            return "replace", "Tinggi, impedansi membesar", "🔴 GANTI - Indikasi kerusakan"
+    
+    elif param_key == "zphz":
+        if value <= -5:
+            return "good", "Negatif (kapasitif), normal", "✅ LANJUTKAN - Normal"
+        elif value <= 0:
+            return "service", "Mendekati 0°, mulai berubah", "⚠️ SERVICE - Periksa kondisi"
+        else:
+            return "replace", "Positif, sifat berubah", "🔴 GANTI - Indikasi kerusakan"
+    
+    elif param_key == "zreal":
+        if value <= 0.013:
+            return "good", "Rendah, resistansi normal", "✅ LANJUTKAN - Normal"
+        elif value <= 0.018:
+            return "service", "Meningkat, perlu diwaspadai", "⚠️ SERVICE - Monitor berkala"
+        else:
+            return "replace", "Tinggi, hambatan besar", "🔴 GANTI - Segera ganti"
+    
+    elif param_key == "zimg":
+        if value < -0.002:
+            return "good", "Negatif (kapasitif), normal", "✅ LANJUTKAN - Normal"
+        elif value <= 0:
+            return "service", "Mendekati 0, mulai berubah", "⚠️ SERVICE - Periksa kondisi"
+        else:
+            return "replace", "Positif, sifat berubah", "🔴 GANTI - Indikasi kerusakan"
+    
+    else:
+        return "good", "Parameter normal", "✅ LANJUTKAN - Normal"
+
 # ==================== SESSION STATE ====================
 if "step" not in st.session_state:
     st.session_state.step = "cycle"
@@ -310,10 +396,7 @@ for msg in st.session_state.messages:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== TAMPILKAN FORM INPUT SESUAI STEP ====================
-current_step = st.session_state.step
-
-# Fungsi untuk menampilkan input dengan tombol info menggunakan st.popover
+# ==================== FUNGSI INPUT DENGAN POPOVER ====================
 def show_input_with_info(param_key, label, placeholder, range_text, input_key):
     param_info = PARAM_INFO[param_key]
     
@@ -334,7 +417,9 @@ def show_input_with_info(param_key, label, placeholder, range_text, input_key):
     
     return user_val
 
-# STEP 1: Aging Cycle
+# ==================== STEP 1-9 INPUT ====================
+current_step = st.session_state.step
+
 if current_step == "cycle":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -362,7 +447,6 @@ if current_step == "cycle":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 2: SOC
 elif current_step == "soc":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -390,7 +474,6 @@ elif current_step == "soc":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 3: R_int
 elif current_step == "rint":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -418,7 +501,6 @@ elif current_step == "rint":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 4: OCV
 elif current_step == "ocv":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -446,7 +528,6 @@ elif current_step == "ocv":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 5: Frequency
 elif current_step == "freq":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -474,7 +555,6 @@ elif current_step == "freq":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 6: Zmod
 elif current_step == "zmod":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -499,7 +579,6 @@ elif current_step == "zmod":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 7: Zphz
 elif current_step == "zphz":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -524,7 +603,6 @@ elif current_step == "zphz":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 8: Zreal
 elif current_step == "zreal":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -549,7 +627,6 @@ elif current_step == "zreal":
             except:
                 st.error("⚠️ Masukkan angka yang valid")
 
-# STEP 9: Zimg (terakhir, langsung prediksi)
 elif current_step == "zimg":
     st.markdown(f"""
     <div class="bot-message-wrapper">
@@ -590,21 +667,82 @@ elif current_step == "zimg":
                 if soh >= 90:
                     status = "SEHAT"
                     status_class = "healthy"
-                    msg = "✅ Baterai dalam kondisi sangat baik! Lanjutkan pemakaian normal."
+                    status_msg = "✅ Baterai dalam kondisi sangat baik!"
                 elif soh >= 70:
                     status = "WASPADA"
                     status_class = "warning"
-                    msg = "⚠️ Baterai mulai menunjukkan degradasi. Segera lakukan inspeksi."
+                    status_msg = "⚠️ Baterai mulai menunjukkan degradasi."
                 else:
                     status = "KRITIS"
                     status_class = "critical"
-                    msg = "🔴 Kesehatan baterai kritis! Segera ganti baterai."
+                    status_msg = "🔴 Kesehatan baterai kritis!"
                 
+                # ==================== ANALISIS PER PARAMETER ====================
+                param_analysis = []
+                param_status_count = {"good": 0, "service": 0, "replace": 0}
+                
+                for param_key, value in st.session_state.data.items():
+                    if param_key in ["cycle", "soc", "rint", "ocv", "zmod", "zphz", "zreal", "zimg"]:
+                        status, msg, action = analyze_parameter(param_key, value)
+                        param_analysis.append({
+                            "name": PARAM_INFO[param_key]["name"],
+                            "value": value,
+                            "status": status,
+                            "msg": msg,
+                            "action": action
+                        })
+                        param_status_count[status] += 1
+                
+                # ==================== BUAT HASIL ANALISIS HTML ====================
+                analysis_html = '<div style="margin-top: 16px;"><strong>📊 Analisis Per Parameter:</strong></div>'
+                
+                for p in param_analysis:
+                    if p["status"] == "good":
+                        border_class = "analysis-good"
+                        status_text = "✅ LANJUTKAN"
+                    elif p["status"] == "service":
+                        border_class = "analysis-service"
+                        status_text = "⚠️ SERVICE"
+                    else:
+                        border_class = "analysis-replace"
+                        status_text = "🔴 GANTI"
+                    
+                    analysis_html += f"""
+                    <div class="analysis-card {border_class}">
+                        <strong>{p['name']}</strong> = {p['value']}<br>
+                        <span style="font-size: 0.85rem;">{p['msg']}</span><br>
+                        <span style="font-size: 0.8rem; font-weight: 600;">{status_text}: {p['action']}</span>
+                    </div>
+                    """
+                
+                # ==================== RINGKASAN REKOMENDASI ====================
+                total_params = param_status_count["good"] + param_status_count["service"] + param_status_count["replace"]
+                
+                summary_html = f"""
+                <div style="margin-top: 20px; padding: 16px; background: #0D0D0D; border-radius: 16px; border: 1px solid #2E2E2E;">
+                    <strong>📋 RINGKASAN REKOMENDASI:</strong><br><br>
+                    <span style="color: #10B981;">✅ LANJUTKAN: {param_status_count['good']} parameter</span><br>
+                    <span style="color: #F59E0B;">⚠️ SERVICE: {param_status_count['service']} parameter</span><br>
+                    <span style="color: #EF4444;">🔴 GANTI: {param_status_count['replace']} parameter</span>
+                """
+                
+                if param_status_count["replace"] > 0:
+                    summary_html += f'<br><br><span style="color: #EF4444;">🔴 **KESIMPULAN: Ada {param_status_count["replace"]} parameter yang harus GANTI. Segera lakukan tindakan!**</span>'
+                elif param_status_count["service"] > 0:
+                    summary_html += f'<br><br><span style="color: #F59E0B;">⚠️ **KESIMPULAN: Ada {param_status_count["service"]} parameter yang perlu SERVICE. Lakukan inspeksi segera.**</span>'
+                else:
+                    summary_html += f'<br><br><span style="color: #10B981;">✅ **KESIMPULAN: Semua parameter dalam kondisi baik. Lanjutkan pemakaian normal.**</span>'
+                
+                summary_html += '</div>'
+                
+                # ==================== RESULT CARD ====================
                 result_html = f"""
                 <div class="result-card">
                     <div class="soh-value">{soh:.1f}%</div>
                     <div class="status-badge {status_class}">{status}</div>
-                    <p style="color: #ccc; margin-top: 12px;">{msg}</p>
+                    <p style="color: #ccc; margin-top: 12px;">{status_msg}</p>
+                    {analysis_html}
+                    {summary_html}
                     <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #3E3E3E;">
                         <p style="font-size: 0.7rem; color: #666; margin: 0;">
                         📊 Berdasarkan 9 parameter yang dimasukkan
@@ -641,7 +779,7 @@ with st.sidebar:
     - 📉 Zreal (Ohm)
     - 🌀 Zimg (Ohm)
     
-    **Output:** SOH (%) + Status
+    **Output:** SOH (%) + Analisis Per Parameter + Rekomendasi
     """)
     
     st.markdown("---")
@@ -650,6 +788,14 @@ with st.sidebar:
     - 🟢 **≥90%** → SEHAT
     - 🟡 **70-90%** → WASPADA
     - 🔴 **<70%** → KRITIS
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 🔧 Rekomendasi Tindakan")
+    st.markdown("""
+    - ✅ **LANJUTKAN** → Parameter normal, lanjutkan pemakaian
+    - ⚠️ **SERVICE** → Perlu inspeksi dan perawatan
+    - 🔴 **GANTI** → Harus segera diganti
     """)
     
     st.markdown("---")
@@ -664,6 +810,6 @@ with st.sidebar:
 # ==================== FOOTER ====================
 st.markdown("""
 <div class="footer">
-    🔋 Battery Assistant — Prediksi SOH Baterai dengan ANN (9 Parameter)
+    🔋 Battery Assistant — Prediksi SOH Baterai + Analisis Per Parameter + Rekomendasi (Lanjutkan/Service/Ganti)
 </div>
 """, unsafe_allow_html=True)
